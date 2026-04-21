@@ -1,0 +1,6 @@
+gradio>=4.0
+pandas
+requests
+pdf2image
+Pillow
+beautifulsoup4

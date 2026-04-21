@@ -1,0 +1,54 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Dati sensibili / locali (mai dentro le immagini)
+e_c/
+fatture_converter/e_fatture/
+fatture_converter/output/
+input/
+output/
+models/
+
+# Documentazione e file di sviluppo
+*.md
+!README.md
+LICENSE
+.env
+.env.*
+!.env.example
+
+# Python generati
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Docker / compose locali
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# Log / temp
+*.log
+logs/
+*.tmp
+*.bak

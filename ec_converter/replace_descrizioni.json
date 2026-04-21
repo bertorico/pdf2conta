@@ -1,0 +1,124 @@
+{
+  "replace": [
+    {
+      "trova": "* Pagamento ADUE",
+      "sostituisci": "",
+      "nota": "Rimuovi prefisso generico ADUE"
+    },
+    {
+      "trova": "Versamento contanti su sportello automatico Effettuato presso ABI",
+      "sostituisci": "Versamento da cassa a banca",
+      "nota": "Semplifica versamento contanti"
+    },
+    {
+      "trova": "Vers. contanti su sport. automatico Effettuato presso Filiale",
+      "sostituisci": "Versamento da cassa a banca",
+      "nota": "Variante abbreviata versamento contanti"
+    },
+    {
+      "trova": "Bonifico da Voi disposto a favore di:",
+      "sostituisci": "Bonifico a favore di",
+      "nota": "Abbrevia prefisso bonifico emesso"
+    },
+    {
+      "trova": "Bonifico da Voi disposo a favore di:",
+      "sostituisci": "Bonifico a favore di",
+      "nota": "Variante OCR con typo (disposo)"
+    },
+    {
+      "trova": "Bonifico a Vostro favore disposto da:",
+      "sostituisci": "Bonifico ricevuto da",
+      "nota": "Abbrevia prefisso bonifico ricevuto"
+    },
+    {
+      "trova": "Bonifico a Vosto favore disposo da:",
+      "sostituisci": "Bonifico ricevuto da",
+      "nota": "Variante OCR con typo"
+    },
+    {
+      "trova": "Bonifico a Vostro favori disposto da:",
+      "sostituisci": "Bonifico ricevuto da",
+      "nota": "Variante OCR con typo (favori)"
+    },
+    {
+      "trova": "MITT.:",
+      "sostituisci": "",
+      "nota": "Rimuovi prefisso mittente"
+    },
+    {
+      "trova": "BENEF.:",
+      "sostituisci": "",
+      "nota": "Rimuovi prefisso beneficiario"
+    },
+    {
+      "trova": "* Commissioni spese ADUE",
+      "sostituisci": "Commissioni ADUE",
+      "nota": "Abbrevia commissioni ADUE"
+    },
+    {
+      "trova": "* Commissione pagamento CBILL / pagoPA",
+      "sostituisci": "Commissione pagoPA",
+      "nota": "Abbrevia commissione pagoPA"
+    },
+    {
+      "trova": "* Costo Bonifico Istantaneo da Voi disposto",
+      "sostituisci": "Costo Bonifico Istantaneo",
+      "nota": "Abbrevia costo bonifico"
+    },
+    {
+      "trova": "* Costo Bonifico Istantaneo da Voi disposi",
+      "sostituisci": "Costo Bonifico Istantaneo",
+      "nota": "Variante OCR con typo (disposi)"
+    },
+    {
+      "trova": "Prelievo presso cassa self banca del gruppo",
+      "sostituisci": "Prelievo da cassa",
+      "nota": "Abbrevia prelievo cassa self"
+    },
+    {
+      "trova": "Pagamento disposiz. elettroniche",
+      "sostituisci": "Pagamento disposizioni elettroniche",
+      "nota": "Espandi abbreviazione"
+    },
+    {
+      "trova": "Pagamento da disposiz. elettroniche",
+      "sostituisci": "Pagamento disposizioni elettroniche",
+      "nota": "Variante con da"
+    },
+    {
+      "trova": "Bonifico SEPA Italia a Vs. favore",
+      "sostituisci": "Bonifico ricevuto",
+      "nota": "BNL: abbrevia bonifico ricevuto"
+    },
+    {
+      "trova": "Vostro bonificato del",
+      "sostituisci": "Bonifico emesso del",
+      "nota": "BNL: abbrevia bonifico emesso"
+    },
+    {
+      "trova": "RIBA OP",
+      "sostituisci": "RIBA",
+      "nota": "BNL: abbrevia RIBA"
+    },
+    {
+      "trova": "EUR 000000",
+      "sostituisci": "",
+      "nota": "BNL: rimuovi padding EUR"
+    },
+    {
+      "trova": "Addebito SEPA Dd A fav. di",
+      "sostituisci": "Addebito SDD",
+      "nota": "BNL: abbrevia addebito SEPA"
+    },
+    {
+      "trova": "RI1PAGAMENTO FATTURE",
+      "sostituisci": "PAGAMENTO FATTURE",
+      "nota": "BNL: pulisci prefisso RI1"
+    },
+    {
+      "trova": "SOCIETA&apos;",
+      "sostituisci": "SOCIETA'",
+      "nota": "BNL: fix entita' HTML apostrofo"
+    }
+  ]
+}

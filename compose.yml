@@ -1,0 +1,101 @@
+services:
+
+  dots-ocr:
+    image: vllm/vllm-openai:v0.11.0
+    container_name: odcr-dots-ocr
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+    volumes:
+      - ./models:/root/.cache/huggingface
+    ports:
+      - "8222:8000"
+    command: >
+      --model rednote-hilab/dots.ocr
+      --trust-remote-code
+      --gpu-memory-utilization 0.7
+      --max-model-len 8192
+      --served-model-name rednote-hilab/dots.ocr
+      --chat-template-content-format string
+      --enforce-eager
+      --mm-processor-kwargs '{"max_pixels": 602112}'
+      --host 0.0.0.0
+      --port 8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 600s
+
+  dots-ocr-ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    container_name: odcr-dots-ocr-ui
+    restart: unless-stopped
+    environment:
+      - VLLM_URL=http://dots-ocr:8000
+      - MODEL_NAME=rednote-hilab/dots.ocr
+    ports:
+      - "8223:7860"
+    depends_on:
+      dots-ocr:
+        condition: service_healthy
+
+  ec-converter-ui:
+    build:
+      context: ./ec_converter
+      dockerfile: Dockerfile
+    container_name: odcr-ec-converter-ui
+    restart: unless-stopped
+    ports:
+      - "8224:7860"
+    environment:
+      - VLLM_URL=http://dots-ocr:8000
+      - MODEL_NAME=rednote-hilab/dots.ocr
+      - DPI=200
+      - MAX_TOKENS=4096
+    volumes:
+      - ./e_c:/data
+    depends_on:
+      dots-ocr:
+        condition: service_healthy
+
+  fatture-converter:
+    build:
+      context: ./fatture_converter
+      dockerfile: Dockerfile
+    container_name: odcr-fatture-converter
+    volumes:
+      - ./fatture_converter/e_fatture:/app/e_fatture
+      - ./fatture_converter/output:/app/output
+    environment:
+      - CF_CEDENTE=${CF_CEDENTE:-00000000000}
+    restart: "no"
+
+  processor:
+    build:
+      context: ./processor
+      dockerfile: Dockerfile
+    container_name: odcr-processor
+    restart: unless-stopped
+    volumes:
+      - ./input:/input
+      - ./output:/output
+    environment:
+      - VLLM_URL=http://dots-ocr:8000
+      - MODEL_NAME=rednote-hilab/dots.ocr
+      - CHECK_INTERVAL=30
+      - DPI=200
+      - PROMPT_MODE=full
+    depends_on:
+      dots-ocr:
+        condition: service_healthy
