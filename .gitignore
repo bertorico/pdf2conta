@@ -32,6 +32,8 @@ dots_ocr.md
 secrets/
 credentials.json
 
+.claude
+
 # ========= PYTHON =========
 __pycache__/
 *.py[cod]
