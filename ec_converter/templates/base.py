@@ -24,6 +24,7 @@ class Movimento:
     causale: Optional[str] = None  # codice causale (es. "31", "78")
     causale_nome: Optional[str] = None  # nome causale (es. "Pagamento disposiz. elettroniche")
     pagina: int = 0
+    corretto: bool = False  # True se dare/avere swappato automaticamente per causale univoca
 
 
 class BankTemplate(ABC):

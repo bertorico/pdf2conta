@@ -115,6 +115,11 @@ def pulisci_descrizione(
 
     s = raw
 
+    # [0] Decodifica entità HTML comuni prima di qualsiasi altra operazione.
+    # Necessario perché l'OCR può produrre "&gt;" invece di ">" nelle URL
+    # e nei codici tecnici (es. "/GEST=&gt;SETEFI"), impedendo il match delle regex.
+    s = s.replace('&gt;', '>').replace('&lt;', '<').replace('&amp;', '&').replace('&apos;', "'").replace('&quot;', '"')
+
     # [1] Rimuovi tag HTML
     s = re.sub(r'<br\s*/?>', ' ', s)
     s = re.sub(r'</?(?:ul|li|ol|p|div|span|table|tr|td|th|thead|tbody)[^>]*>', ' ', s)
@@ -274,3 +279,59 @@ def match_causale(descrizione: str, causali: Optional[list[dict]] = None) -> tup
             if pattern.lower() in desc_lower:
                 return c["codice"], c["nome"]
     return None, None
+
+
+# --- Correzione segno per causale univoca ---
+
+# Segno contabile atteso per causale: "A" = avere, "D" = dare.
+# Dato statico: è semantica contabile invariante, non configurabile dall'utente.
+CAUSALE_SEGNO: dict[str, str] = {
+    "04": "A",  # Incassi POS al netto
+    "27": "D",  # Bonifico emesso
+    "48": "A",  # Bonifico ricevuto
+    "05": "D",  # Pagamento ADUE/SDD
+    "31": "D",  # Pagamento disposiz. elettroniche
+    "66": "D",  # Spese bancarie
+    "91": "A",  # Versamento contanti
+    "78": "D",  # Prelevamento titolare
+    "26": "D",  # Pagamento bolletta
+    "54": "D",  # Premio polizza
+    "37": "D",  # Ricarica utenza
+}
+
+
+def correggi_segno_per_causale(movimenti: list) -> int:
+    """
+    Corregge l'inversione dare/avere per i movimenti con causale univoca.
+
+    Logica: se la causale è in CAUSALE_SEGNO e il valore si trova nella
+    colonna opposta a quella attesa (e l'altra è None), esegue lo swap
+    e imposta corretto=True sul movimento.
+
+    Non interviene se entrambe le colonne sono valorizzate (ambiguità).
+
+    Args:
+        movimenti: lista di oggetti Movimento (modificati in-place).
+
+    Returns:
+        Numero di movimenti corretti.
+    """
+    count = 0
+    for m in movimenti:
+        if not m.causale:
+            continue
+        segno = CAUSALE_SEGNO.get(m.causale)
+        if segno is None:
+            continue
+        # Swap solo se esattamente uno dei due campi è valorizzato
+        solo_dare = m.dare is not None and m.avere is None
+        solo_avere = m.avere is not None and m.dare is None
+        if segno == "A" and solo_dare:
+            m.avere, m.dare = m.dare, None
+            m.corretto = True
+            count += 1
+        elif segno == "D" and solo_avere:
+            m.dare, m.avere = m.avere, None
+            m.corretto = True
+            count += 1
+    return count

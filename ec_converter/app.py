@@ -28,6 +28,7 @@ from normalizer import (
     formatta_importo, normalizza_importo,
     carica_causali, salva_causali, match_causale,
     carica_replace, salva_replace,
+    correggi_segno_per_causale,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -105,9 +106,12 @@ def elabora_pdf(pdf_file, template_display, titolare_conto, progress=gr.Progress
     tot_dare = sum(m.dare or 0 for m in movimenti)
     tot_avere = sum(m.avere or 0 for m in movimenti)
     n_causali = sum(1 for m in movimenti if m.causale)
+    n_corretti = sum(1 for m in movimenti if m.corretto)
     msg += f"\nTotale Dare: {formatta_importo(tot_dare)} | Totale Avere: {formatta_importo(tot_avere)}"
     msg += f"\nDifferenza: {formatta_importo(tot_avere - tot_dare)}"
     msg += f"\nCausali assegnate: {n_causali}/{len(movimenti)}"
+    if n_corretti:
+        msg += f"\nCorretti {n_corretti} movimenti per inversione dare/avere (causale univoca)"
 
     quadratura = _formatta_quadratura(saldi or {}, tot_dare, tot_avere)
 
@@ -154,6 +158,7 @@ def _movimenti_to_dataframe(movimenti: list[Movimento]) -> pd.DataFrame:
             "Causale": m.causale or "",
             "Addebiti": formatta_importo(m.dare) if m.dare is not None else "",
             "Accrediti": formatta_importo(m.avere) if m.avere is not None else "",
+            "Corretto": "⚠" if m.corretto else "",
         })
     return pd.DataFrame(rows)
 
@@ -194,7 +199,10 @@ def genera_csv(df_data, modalita_importo, includi_causale):
 
 
 def _dataframe_to_movimenti(df: pd.DataFrame) -> list[Movimento]:
-    """Converte il DataFrame editato dall'utente in lista di Movimento."""
+    """Converte il DataFrame editato dall'utente in lista di Movimento.
+
+    La colonna "Corretto" è solo visualizzazione: viene ignorata silenziosamente.
+    """
     movimenti = []
     for _, row in df.iterrows():
         data_op = str(row.get("Data Operazione", "")).strip()
@@ -212,6 +220,7 @@ def _dataframe_to_movimenti(df: pd.DataFrame) -> list[Movimento]:
             dare=dare_val,
             avere=avere_val,
             causale=causale,
+            # "Corretto" non viene riletto: è derivato dalla logica, non dall'utente
         ))
     return movimenti
 
@@ -300,7 +309,7 @@ def build_ui():
                 gr.Markdown("### Anteprima Movimenti")
                 gr.Markdown("*Puoi modificare i dati (inclusa la causale) nella tabella prima di generare il CSV.*")
                 preview_table = gr.Dataframe(
-                    headers=["Data Operazione", "Data Valuta", "Descrizione", "Causale", "Addebiti", "Accrediti"],
+                    headers=["Data Operazione", "Data Valuta", "Descrizione", "Causale", "Addebiti", "Accrediti", "Corretto"],
                     interactive=True,
                     wrap=True,
                 )

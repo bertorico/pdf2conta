@@ -18,7 +18,7 @@ from pdf2image import convert_from_path
 
 from templates import get_template, list_templates, detect_bank
 from templates.base import Movimento
-from normalizer import match_causale, carica_causali, normalizza_importo
+from normalizer import match_causale, carica_causali, normalizza_importo, correggi_segno_per_causale
 
 logger = logging.getLogger(__name__)
 
@@ -246,6 +246,11 @@ def process_pdf(
                 if codice:
                     mov.causale = codice
                     mov.causale_nome = nome
+
+        # Step 4.5: Correggi inversioni dare/avere per causali univoche
+        n_corretti = correggi_segno_per_causale(movimenti)
+        if n_corretti:
+            logger.info(f"Corretti {n_corretti} movimenti per inversione dare/avere (causale univoca)")
 
         return movimenti, template_name, saldi
     finally:
