@@ -34,6 +34,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 _current_movimenti: list[Movimento] = []
+_current_saldi: dict = {}
 
 
 AUTO_DETECT_LABEL = "Auto-detect"
@@ -54,15 +55,15 @@ def get_template_name_from_display(display: str) -> str:
     return list_templates()[0]
 
 
-def elabora_pdf(pdf_file, template_display, progress=gr.Progress()):
-    """Elabora il PDF e restituisce la tabella di anteprima."""
-    global _current_movimenti
+def elabora_pdf(pdf_file, template_display, titolare_conto, progress=gr.Progress()):
+    """Elabora il PDF e restituisce la tabella di anteprima + quadratura saldi."""
+    global _current_movimenti, _current_saldi
 
     if pdf_file is None:
-        return None, "Nessun file caricato."
+        return None, "Nessun file caricato.", ""
 
     if not check_ocr_server():
-        return None, "Server OCR (dots-ocr) non raggiungibile. Verificare che il servizio sia attivo."
+        return None, "Server OCR (dots-ocr) non raggiungibile. Verificare che il servizio sia attivo.", ""
 
     template_name = get_template_name_from_display(template_display)
 
@@ -77,22 +78,23 @@ def elabora_pdf(pdf_file, template_display, progress=gr.Progress()):
             progress(0.95, desc=detail)
 
     try:
-        movimenti, used_template = process_pdf(
+        movimenti, used_template, saldi = process_pdf(
             pdf_path=pdf_file.name,
             template_name=template_name,
             progress_callback=progress_cb,
+            titolare_conto=titolare_conto or "",
         )
     except Exception as e:
         logger.exception("Errore durante l'elaborazione")
-        return None, f"Errore: {e}"
+        return None, f"Errore: {e}", ""
 
     if not movimenti:
-        return None, "Nessun movimento trovato nel PDF."
+        return None, "Nessun movimento trovato nel PDF.", ""
 
     _current_movimenti = movimenti
+    _current_saldi = saldi or {}
     df = _movimenti_to_dataframe(movimenti)
 
-    # Nome banca usata
     bank_display = TEMPLATES.get(used_template, lambda: None)
     if bank_display:
         bank_display = bank_display().display_name
@@ -107,7 +109,39 @@ def elabora_pdf(pdf_file, template_display, progress=gr.Progress()):
     msg += f"\nDifferenza: {formatta_importo(tot_avere - tot_dare)}"
     msg += f"\nCausali assegnate: {n_causali}/{len(movimenti)}"
 
-    return df, msg
+    quadratura = _formatta_quadratura(saldi or {}, tot_dare, tot_avere)
+
+    return df, msg, quadratura
+
+
+def _formatta_quadratura(saldi: dict, tot_dare: float, tot_avere: float) -> str:
+    """Restituisce un markdown con il box quadratura saldi."""
+    si = saldi.get("saldo_iniziale")
+    sf = saldi.get("saldo_finale")
+    di = saldi.get("data_iniziale") or "?"
+    df_ = saldi.get("data_finale") or "?"
+
+    if si is None and sf is None:
+        return ""
+
+    variazione_movimenti = tot_avere - tot_dare
+    righe = ["### Quadratura saldi"]
+    if si is not None:
+        righe.append(f"- Saldo iniziale ({di}): **{formatta_importo(si)} €**")
+    if sf is not None:
+        righe.append(f"- Saldo finale ({df_}): **{formatta_importo(sf)} €**")
+    if si is not None and sf is not None:
+        variazione_attesa = sf - si
+        righe.append(f"- Variazione attesa: **{formatta_importo(variazione_attesa)} €**")
+        righe.append(f"- Variazione movimenti: **{formatta_importo(variazione_movimenti)} €**")
+        diff = variazione_movimenti - variazione_attesa
+        if abs(diff) < 0.01:
+            righe.append("- ✅ **Quadratura OK**")
+        else:
+            righe.append(f"- ⚠️ **Differenza: {formatta_importo(diff)} €** — verifica manualmente i movimenti")
+    else:
+        righe.append(f"- Variazione movimenti: **{formatta_importo(variazione_movimenti)} €**")
+    return "\n".join(righe)
 
 
 def _movimenti_to_dataframe(movimenti: list[Movimento]) -> pd.DataFrame:
@@ -240,6 +274,11 @@ def build_ui():
                             choices=get_template_choices(),
                             value=AUTO_DETECT_LABEL,
                         )
+                        titolare_input = gr.Textbox(
+                            label="Titolare conto (opzionale)",
+                            placeholder="Es. FARMACIA ESEMPIO",
+                            info="Se valorizzato, il nome viene rimosso dalle descrizioni POS (utile per Intesa ufficiale).",
+                        )
                         btn_elabora = gr.Button("Elabora PDF", variant="primary")
 
                     with gr.Column(scale=1):
@@ -256,6 +295,7 @@ def build_ui():
                         csv_output = gr.File(label="Download CSV")
 
                 status_msg = gr.Textbox(label="Stato", interactive=False, lines=4)
+                quadratura_box = gr.Markdown("")
 
                 gr.Markdown("### Anteprima Movimenti")
                 gr.Markdown("*Puoi modificare i dati (inclusa la causale) nella tabella prima di generare il CSV.*")
@@ -267,8 +307,8 @@ def build_ui():
 
                 btn_elabora.click(
                     fn=elabora_pdf,
-                    inputs=[pdf_input, template_choice],
-                    outputs=[preview_table, status_msg],
+                    inputs=[pdf_input, template_choice, titolare_input],
+                    outputs=[preview_table, status_msg, quadratura_box],
                 )
                 btn_csv.click(
                     fn=genera_csv,

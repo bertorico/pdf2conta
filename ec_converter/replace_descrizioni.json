@@ -1,9 +1,69 @@
 {
   "replace": [
     {
+      "trova": "Accredito POS al netto esente",
+      "sostituisci": "POS al netto esente",
+      "nota": "Intesa ufficiale: abbrevia POS Setefi"
+    },
+    {
+      "trova": "Accredito POS al netto a pagament",
+      "sostituisci": "POS a pagamento",
+      "nota": "Intesa ufficiale: POS Setefi a pagamento"
+    },
+    {
+      "trova": "Accredito POS al netto a pagamento",
+      "sostituisci": "POS a pagamento",
+      "nota": "Variante completa POS a pagamento"
+    },
+    {
+      "trova": "Pagamento ADUE B2B",
+      "sostituisci": "ADUE B2B",
+      "nota": "Intesa ufficiale: abbrevia ADUE B2B"
+    },
+    {
       "trova": "* Pagamento ADUE",
       "sostituisci": "",
       "nota": "Rimuovi prefisso generico ADUE"
+    },
+    {
+      "trova": "Commissioni Transato POS",
+      "sostituisci": "Commissioni POS",
+      "nota": "Intesa ufficiale: abbrevia commissioni POS"
+    },
+    {
+      "trova": "Canone spese diverse servizio POS",
+      "sostituisci": "Canone POS",
+      "nota": "Intesa ufficiale: abbrevia canone POS"
+    },
+    {
+      "trova": "Sconto da riduzione commiss su operaz <5",
+      "sostituisci": "Sconto commissioni POS",
+      "nota": "Intesa ufficiale: abbrevia sconto commissioni"
+    },
+    {
+      "trova": "Imposta di bollo E/C e Rendiconto",
+      "sostituisci": "Imposta di bollo E/C",
+      "nota": "Intesa ufficiale: abbrevia imposta bollo"
+    },
+    {
+      "trova": "IMP. DI BOLLO E/C NEXI PAYMENTS",
+      "sostituisci": "Imposta bollo NEXI",
+      "nota": "Intesa ufficiale: abbrevia bollo NEXI"
+    },
+    {
+      "trova": "BENEFICIARI DIVERSI - COMMISSIONI",
+      "sostituisci": "Commissioni bonifico",
+      "nota": "Intesa: bonifico raggruppato commissioni"
+    },
+    {
+      "trova": "BENEFICIARI DIVERSI",
+      "sostituisci": "",
+      "nota": "Intesa: rimuovi etichetta beneficiari diversi"
+    },
+    {
+      "trova": "Versam. Contanti",
+      "sostituisci": "Versamento contanti",
+      "nota": "Intesa ufficiale: espandi abbreviazione"
     },
     {
       "trova": "Versamento contanti su sportello automatico Effettuato presso ABI",
@@ -84,6 +144,16 @@
       "trova": "Pagamento da disposiz. elettroniche",
       "sostituisci": "Pagamento disposizioni elettroniche",
       "nota": "Variante con da"
+    },
+    {
+      "trova": "DISPOSIZIONE RI.BA N.",
+      "sostituisci": "RIBA n.",
+      "nota": "Intesa ufficiale: abbrevia disposizione RIBA"
+    },
+    {
+      "trova": "dell'utenza N.",
+      "sostituisci": "utenza",
+      "nota": "Intesa ufficiale: abbrevia ricariche telefoniche"
     },
     {
       "trova": "Bonifico SEPA Italia a Vs. favore",

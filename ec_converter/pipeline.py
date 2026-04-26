@@ -5,6 +5,7 @@ Riutilizza il servizio dots-ocr (vLLM) gia' in esecuzione.
 """
 
 import os
+import re
 import base64
 import shutil
 import tempfile
@@ -17,7 +18,7 @@ from pdf2image import convert_from_path
 
 from templates import get_template, list_templates, detect_bank
 from templates.base import Movimento
-from normalizer import match_causale, carica_causali
+from normalizer import match_causale, carica_causali, normalizza_importo
 
 logger = logging.getLogger(__name__)
 
@@ -103,12 +104,75 @@ def ocr_pages(image_paths: list[Path], progress_callback=None) -> list[str]:
     return results
 
 
+def estrai_saldi_intesa(pages_html: list[str]) -> dict:
+    """
+    Estrae saldi e totali dal riepilogo iniziale Intesa Sanpaolo.
+
+    Cerca nei primi 2 elementi di pages_html i pattern:
+      - Saldo iniziale al DD.MM.YYYY ... +X.XXX,XX €
+      - Totale accrediti ... +X.XXX,XX €
+      - Totale addebiti ... -X.XXX,XX €
+      - Saldo finale al DD.MM.YYYY ... +X.XXX,XX €
+
+    Returns: dict con saldo_iniziale, saldo_finale, totale_accrediti,
+             totale_addebiti, data_iniziale, data_finale (None se non trovati).
+    """
+    saldi = {
+        "saldo_iniziale": None, "saldo_finale": None,
+        "totale_accrediti": None, "totale_addebiti": None,
+        "data_iniziale": None, "data_finale": None,
+    }
+    if not pages_html:
+        return saldi
+
+    text = pages_html[0]
+    if len(pages_html) > 1:
+        text += "\n" + pages_html[1]
+    plain = re.sub(r'<[^>]+>', ' ', text)
+    plain = re.sub(r'\s+', ' ', plain)
+
+    def _segno_e_importo(segno_raw: Optional[str], importo_raw: str) -> Optional[float]:
+        v = normalizza_importo(importo_raw)
+        if v is None:
+            return None
+        return -v if segno_raw and segno_raw.strip() == "-" else v
+
+    m = re.search(
+        r'Saldo\s+iniziale\s+al\s+(\d{2}\.\d{2}\.\d{4}).*?([+\-])\s*([\d.,\s]+?)\s*€',
+        plain, re.IGNORECASE)
+    if m:
+        saldi["data_iniziale"] = m.group(1)
+        saldi["saldo_iniziale"] = _segno_e_importo(m.group(2), m.group(3))
+
+    m = re.search(
+        r'Saldo\s+finale\s+al\s+(\d{2}\.\d{2}\.\d{4}).*?([+\-])\s*([\d.,\s]+?)\s*€',
+        plain, re.IGNORECASE)
+    if m:
+        saldi["data_finale"] = m.group(1)
+        saldi["saldo_finale"] = _segno_e_importo(m.group(2), m.group(3))
+
+    m = re.search(
+        r'Totale\s+accrediti\b.*?([+\-])\s*([\d.,\s]+?)\s*€',
+        plain, re.IGNORECASE)
+    if m:
+        saldi["totale_accrediti"] = _segno_e_importo(m.group(1), m.group(2))
+
+    m = re.search(
+        r'Totale\s+addebiti\b.*?([+\-])\s*([\d.,\s]+?)\s*€',
+        plain, re.IGNORECASE)
+    if m:
+        saldi["totale_addebiti"] = _segno_e_importo(m.group(1), m.group(2))
+
+    return saldi
+
+
 def process_pdf(
     pdf_path: str,
     template_name: str = "intesa_sanpaolo",
     dpi: int = None,
     progress_callback=None,
-) -> tuple[list[Movimento], str]:
+    titolare_conto: str = "",
+) -> tuple[list[Movimento], str, dict]:
     """
     Pipeline completa: PDF -> immagini -> OCR -> parsing -> movimenti.
 
@@ -117,8 +181,13 @@ def process_pdf(
         template_name: nome del template bancario ("auto" per auto-detect)
         dpi: risoluzione per la conversione PDF->immagini
         progress_callback: callback(step, detail) per aggiornamenti UI
+        titolare_conto: nome del titolare del conto (es. "FARMACIA ESEMPIO")
+            che viene rimosso dalle descrizioni POS. Usato dai template che
+            lo supportano (es. intesa_sanpaolo_ufficiale).
 
-    Returns: (lista di Movimento normalizzati, nome template usato)
+    Returns: (lista Movimento normalizzati, nome template usato, dict saldi).
+        Il dict saldi e' valorizzato solo per i template che lo supportano
+        (es. intesa_sanpaolo_ufficiale), altrimenti contiene chiavi a None.
     """
     # Step 1: PDF -> immagini
     if progress_callback:
@@ -149,13 +218,23 @@ def process_pdf(
                 template_name = "intesa_sanpaolo"
                 logger.warning("Banca non riconosciuta, uso Intesa Sanpaolo come default")
 
-        template = get_template(template_name)
+        # I template che accettano titolare_conto lo ricevono via kwargs
+        template_kwargs = {}
+        if titolare_conto and template_name == "intesa_sanpaolo_ufficiale":
+            template_kwargs["titolare_conto"] = titolare_conto
+        template = get_template(template_name, **template_kwargs)
 
         # Step 3: Estrazione movimenti con template banca
         if progress_callback:
             progress_callback("parse", "Estrazione movimenti...")
         movimenti = template.estrai_movimenti(pages_html)
         logger.info(f"Estratti {len(movimenti)} movimenti")
+
+        # Step 3.5: Estrazione saldi (solo per Intesa)
+        saldi: dict = {}
+        if template_name in ("intesa_sanpaolo_ufficiale", "intesa_sanpaolo"):
+            saldi = estrai_saldi_intesa(pages_html)
+            logger.info(f"Saldi estratti: {saldi}")
 
         # Step 4: Assegnazione causali automatiche
         if progress_callback:
@@ -168,7 +247,7 @@ def process_pdf(
                     mov.causale = codice
                     mov.causale_nome = nome
 
-        return movimenti, template_name
+        return movimenti, template_name, saldi
     finally:
         # Pulizia immagini temporanee
         if image_paths:

@@ -86,7 +86,11 @@ def normalizza_data(raw: str) -> Optional[str]:
     return None
 
 
-def pulisci_descrizione(raw: str, max_length: int = 100) -> str:
+def pulisci_descrizione(
+    raw: str,
+    max_length: int = 100,
+    extra_replaces: Optional[list[str]] = None,
+) -> str:
     """
     Pulisce e condensa la descrizione di un movimento bancario.
 
@@ -94,9 +98,17 @@ def pulisci_descrizione(raw: str, max_length: int = 100) -> str:
     1. Rimuove tag HTML (<br>, <ul>, <li>, ecc.)
     2. Applica replace configurabili da replace_descrizioni.json
     3. Rimuove asterisco iniziale
-    4. Rimuove codici tecnici (IBAN, E2EID, BIC, CRO, TRN, codici dispositiva)
-    5. Collassa spazi multipli
-    6. Tronca a max_length caratteri senza spezzare parole
+    4. Rimuove codici tecnici (IBAN, E2EID, BIC, CRO, TRN, MANDATO, COMM Setefi, ecc.)
+    5. Applica extra_replaces (es. nome titolare conto, configurabile da UI)
+    6. Collassa spazi multipli
+    7. Tronca a max_length caratteri senza spezzare parole
+
+    Args:
+        raw: testo da pulire (puo' contenere HTML)
+        max_length: lunghezza massima del risultato
+        extra_replaces: lista di stringhe da rimuovere (case-insensitive).
+            Tipicamente il nome del titolare del conto, che ricorre in tutte
+            le descrizioni POS senza aggiungere informazione utile.
     """
     if not raw:
         return ""
@@ -114,21 +126,40 @@ def pulisci_descrizione(raw: str, max_length: int = 100) -> str:
     s = re.sub(r'^\s*\*\s*', '', s)
 
     # [4] Rimuovi codici tecnici (regex, non configurabili dall'utente)
-    s = re.sub(r'\b[A-Z0-9]{15,}\b', '', s)
+    # Codici Setefi POS: "COMM:019281252 TC:21 MC /GEST=SETEFI"
+    s = re.sub(r'\bCOMM[:.]?\s*\d+\s*TC[:.]?\s*\d+\s*\w*\s*/?\s*GEST\s*=\s*\w+',
+               '', s, flags=re.IGNORECASE)
+    # COD. DISP. ADUE: "COD. DISP.: 0126031956991360"
+    s = re.sub(r'\bCOD\.?\s*DISP\.?[:.]?\s*\d+', '', s, flags=re.IGNORECASE)
+    # Mandato ADUE: "MANDATO: B40404091..."
+    s = re.sub(r'\bMANDATO[:.]?\s*\S+', '', s, flags=re.IGNORECASE)
+    # BIC ORD/CIN
+    s = re.sub(r'\bBIC[.: ]+ORD[.: ]+\S+', '', s, flags=re.IGNORECASE)
+    # E2EID, NOTPROVIDED
     s = re.sub(r'\bE2E(?:ID)?\S*', '', s)
-    s = re.sub(r'\bBIC[.: ]+ORD[.: ]+\S+', '', s)
     s = re.sub(r'\bNOTPROVIDED\b', '', s)
-    s = re.sub(r'\bCOD[. ]+DISP[.: ]+\S+', '', s)
+    # NOME: prefisso ADUE (lasciamo il valore, togliamo la label)
+    s = re.sub(r'\bNOME\s*:\s*', '', s, flags=re.IGNORECASE)
+    # Token tecnici brevi residui
     s = re.sub(r'\bOTH(?:R)?\b', '', s)
     s = re.sub(r'\bSUPP\b', '', s)
     s = re.sub(r'\bCASH\b', '', s)
+    # Codici alfanumerici lunghi (IBAN, CRO, codici dispositiva)
+    s = re.sub(r'\b[A-Z0-9]{15,}\b', '', s)
 
-    # [5] Collassa spazi, rimuovi spazi attorno a punteggiatura
+    # [5] Extra replaces dinamici (titolare conto, ecc.)
+    if extra_replaces:
+        for trova in extra_replaces:
+            if trova:
+                pattern = re.compile(re.escape(trova), re.IGNORECASE)
+                s = pattern.sub('', s)
+
+    # [6] Collassa spazi, rimuovi spazi attorno a punteggiatura
     s = re.sub(r'\s+', ' ', s)
     s = re.sub(r'\s*:\s*$', '', s)
     s = s.strip()
 
-    # [6] Tronca a max_length senza spezzare parole
+    # [7] Tronca a max_length senza spezzare parole
     if len(s) > max_length:
         troncato = s[:max_length]
         ultimo_spazio = troncato.rfind(' ')

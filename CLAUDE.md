@@ -90,6 +90,7 @@ Ogni banca ha un template che definisce il parsing posizionale delle colonne HTM
 
 | Template | Colonne | Note |
 |---|---|---|
+| `intesa_sanpaolo_ufficiale` | 5 (come intesa_sanpaolo) | Layout estratto conto ufficiale Intesa con riepilogo + dettaglio. Pattern detect: "dettaglio movimenti del conto corrente". Pulisce codici Setefi (COMM/TC/GEST), ADUE B2B (COD.DISP./MANDATO). Estrae saldi per quadratura. Supporta `titolare_conto` per rimuovere nome ricorrente dalle descrizioni POS. |
 | `intesa_sanpaolo` | 5: data_op, data_val, desc, dare, avere | Default se auto-detect fallisce |
 | `bnl` | 6: +causale ABI (colonna 2) | Date DD/MM/YYYY, importi con € |
 | `bnl_lista_movimenti` | Variante BNL per "lista movimenti" | Pattern detect: "lista movimenti" |
