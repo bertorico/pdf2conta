@@ -286,7 +286,7 @@ def match_causale(descrizione: str, causali: Optional[list[dict]] = None) -> tup
 # Segno contabile atteso per causale: "A" = avere, "D" = dare.
 # Dato statico: è semantica contabile invariante, non configurabile dall'utente.
 CAUSALE_SEGNO: dict[str, str] = {
-    "04": "A",  # Incassi POS al netto
+    "09": "A",  # Incassi POS al netto
     "27": "D",  # Bonifico emesso
     "48": "A",  # Bonifico ricevuto
     "05": "D",  # Pagamento ADUE/SDD

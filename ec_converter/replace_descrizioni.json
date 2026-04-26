@@ -4,12 +4,17 @@
       "trova": "Accredito POS al netto esente",
       "sostituisci": "POS al netto esente",
       "nota": "Intesa ufficiale: abbrevia POS Setefi"
-    },
+    },   
     {
       "trova": "Accredito POS al netto a pagament",
       "sostituisci": "POS a pagamento",
       "nota": "Intesa ufficiale: POS Setefi a pagamento"
     },
+    {
+      "trova": "AccÑ€ÐµÐ´ito POS al netto esente",
+      "sostituisci": "Accredito POS",
+      "nota": "Intesa ufficiale: POS Setefi a pagamento"
+    },    
     {
       "trova": "Accredito POS al netto a pagamento",
       "sostituisci": "POS a pagamento",
@@ -25,6 +30,11 @@
       "sostituisci": "",
       "nota": "Rimuovi prefisso generico ADUE"
     },
+    {
+      "trova": "/GEST=SETEFI",
+      "sostituisci": "",
+      "nota": "rimuovi /GEST=SETEFI"
+    },     
     {
       "trova": "Commissioni Transato POS",
       "sostituisci": "Commissioni POS",

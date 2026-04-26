@@ -65,6 +65,7 @@ services:
       - MAX_TOKENS=4096
     volumes:
       - ./e_c:/data
+      - ./ec_converter:/app
     depends_on:
       dots-ocr:
         condition: service_healthy

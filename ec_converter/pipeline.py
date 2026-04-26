@@ -18,7 +18,10 @@ from pdf2image import convert_from_path
 
 from templates import get_template, list_templates, detect_bank
 from templates.base import Movimento
-from normalizer import match_causale, carica_causali, normalizza_importo, correggi_segno_per_causale
+from normalizer import (
+    match_causale, carica_causali, normalizza_importo,
+    correggi_segno_per_causale, carica_replace,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -223,6 +226,12 @@ def process_pdf(
         if titolare_conto and template_name == "intesa_sanpaolo_ufficiale":
             template_kwargs["titolare_conto"] = titolare_conto
         template = get_template(template_name, **template_kwargs)
+
+        # Forza ricarica replace prima del parsing template, cosi' modifiche
+        # a replace_descrizioni.json (host bind-mount o tab UI) vengono viste
+        # senza dover riavviare il container. Le causali vengono ricaricate
+        # piu' avanti come parte del Step 4.
+        carica_replace()
 
         # Step 3: Estrazione movimenti con template banca
         if progress_callback:

@@ -1,6 +1,6 @@
 {
   "causali": [
-    {"codice": "04", "nome": "Incassi POS al netto", "pattern": ["accredito pos al netto", "pos al netto esente", "pos al netto a pagament", "pos a pagamento", "pos al netto"]},
+    {"codice": "09", "nome": "Incassi POS al netto", "pattern": ["accredito pos al netto", "pos al netto esente", "pos al netto a pagament", "pos a pagamento", "pos al netto"]},
     {"codice": "31", "nome": "Pagamento disposiz. elettroniche", "pattern": ["disposiz. elettroniche", "pagamento disposiz", "disposizioni elettroniche", "disposizione ri.ba", "ri.ba n."]},
     {"codice": "78", "nome": "Prelevamento titolare", "pattern": ["prelevamento", "prelievo socio", "prelievo presso cassa"]},
     {"codice": "66", "nome": "Spese bancarie", "pattern": ["canone carta", "commissioni spese", "commissione pagamento", "imposta di bollo", "imposta bollo", "competenze di chiusura", "costo bonifico", "commissioni pos", "commissioni transato", "canone pos", "canone spese diverse servizio pos", "sconto commissioni pos", "sconto da riduzione commiss"]},
