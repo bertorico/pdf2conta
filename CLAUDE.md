@@ -80,9 +80,17 @@ PDF estratto conto
   → [3] HTML parsing (BeautifulSoup) con template banca
   → [4] Normalizzazione importi/date/descrizioni
   → [5] Assegnazione causali automatiche (pattern matching)
-  → [6] Preview tabella editabile (Gradio Dataframe)
-  → [7] Export CSV formato Ago Zucchetti
+  → [6] Correzione segno dare/avere per causali univoche (POS, bonifici, spese...)
+  → [7] Estrazione saldi e quadratura (solo template Intesa)
+  → [8] Preview tabella editabile (Gradio Dataframe) + Export CSV Ago
 ```
+
+### Contratti pipeline (entry-point principali)
+
+- `pipeline.process_pdf(pdf_path, template_name="intesa_sanpaolo", dpi=None, progress_callback=None, titolare_conto="") -> (list[Movimento], str, dict)`. Il dict saldi è popolato solo per i template Intesa.
+- `templates.get_template(name, **kwargs) -> BankTemplate`. Accetta kwargs per i template che li supportano (es. `titolare_conto` per `intesa_sanpaolo_ufficiale`).
+- `templates.detect_bank(first_page_text: str) -> str | None`. Pattern controllati in ordine (specifici prima di generici, vedi `_DETECT_PATTERNS`).
+- `pipeline.estrai_saldi_intesa(pages_html) -> dict`. Cerca pattern `Saldo iniziale al ...`, `Totale accrediti`, `Totale addebiti`, `Saldo finale al ...` nelle prime 2 pagine.
 
 ### Template bancari
 
@@ -106,19 +114,50 @@ Registry in `ec_converter/templates/__init__.py`: dizionario `TEMPLATES` + lista
    - Aggiungere import e entry in `TEMPLATES`
    - Aggiungere pattern in `_DETECT_PATTERNS` (pattern più specifici prima)
 5. Aggiungere replace specifici in `ec_converter/replace_descrizioni.json`
+6. Verificare che i pattern delle causali in `causali.json` coprano i movimenti tipici della banca; se servono nuove causali con segno univoco, aggiornare anche `CAUSALE_SEGNO` in `normalizer.py`
+7. Se la banca ha un riepilogo saldi a inizio estratto, considerare di estendere `pipeline.estrai_saldi_*` per abilitare la quadratura
 
 ### Dataclass Movimento (`templates/base.py`)
 
-Campi: `data_operazione` (DD.MM.YYYY), `data_valuta`, `descrizione_raw`, `descrizione` (pulita), `dare` (float), `avere` (float), `causale` (codice), `causale_nome`, `pagina`.
+Campi: `data_operazione` (DD.MM.YYYY), `data_valuta`, `descrizione_raw`, `descrizione` (pulita), `dare` (float), `avere` (float), `causale` (codice), `causale_nome`, `pagina`, `corretto` (bool, True se il segno dare/avere è stato auto-corretto in step [6]).
 
 ### Normalizzazione importi (`normalizer.py`)
 
 Gestisce anomalie OCR tipiche: spazi spuri ("3,420, 00"), virgole al posto di punti, simbolo €. L'ultimo separatore seguito da 2 cifre è il decimale, il resto sono migliaia.
 
+### Pulizia descrizioni (`normalizer.pulisci_descrizione`)
+
+Pipeline a 8 step (`raw, max_length=100, extra_replaces=None`):
+- **[0]** Decodifica entità HTML (`&gt;` → `>`, `&lt;`, `&amp;`, `&apos;`, `&quot;`). Necessaria perché dots-ocr a volte produce `&gt;` nei codici Setefi (`/GEST=&gt;SETEFI`).
+- **[1]** Strip tag HTML (`<br>`, `<ul>`, `<li>`, ecc.).
+- **[2]** Replace configurabili (`replace_descrizioni.json`).
+- **[3]** Asterisco iniziale rimosso.
+- **[4]** Regex pulizia codici tecnici: `COMM:.../GEST=...` (Setefi POS), `COD. DISP.`, `MANDATO`, `BIC ORD`, `E2EID`, `NOTPROVIDED`, `NOME:` (label ADUE), codici alfanumerici 15+ caratteri (IBAN/CRO).
+- **[5]** `extra_replaces` dinamici (es. titolare conto passato da UI).
+- **[6]** Collasso spazi.
+- **[7]** Troncamento intelligente a `max_length` (non spezza parole se possibile).
+
+### Correzione segno dare/avere (`normalizer.correggi_segno_per_causale`)
+
+L'OCR a volte mette l'importo nella colonna sbagliata (rilevato 55% inversione sui POS in `intesa_ufficiale.pdf`). La correzione automatica usa una mappa statica codice causale → segno univoco (`CAUSALE_SEGNO` in `normalizer.py`):
+
+- **AVERE**: 04 (POS), 48 (bonifico ricevuto), 91 (versamento contanti)
+- **DARE**: 05 (ADUE/SDD), 26 (pagamento bolletta), 27 (bonifico emesso), 31 (disposiz. elettroniche), 37 (ricarica utenza), 54 (premio polizza), 66 (spese bancarie), 78 (prelevamento)
+
+Trigger swap: causale presente in `CAUSALE_SEGNO` AND solo una colonna valorizzata AND quella colonna è opposta al segno atteso. Imposta `Movimento.corretto = True`. Conteggio mostrato in UI nel box Stato e con `⚠` nella colonna `Corretto` della tabella anteprima.
+
+**Importante**: la mappa è statica nel codice (NON in `causali.json`) perché è semantica contabile invariante. Se aggiungi una causale al JSON e ha segno univoco, aggiorna anche `CAUSALE_SEGNO`.
+
+### Quadratura saldi (template Intesa)
+
+`pipeline.estrai_saldi_intesa(pages_html)` legge dal riepilogo iniziale: `saldo_iniziale`, `saldo_finale`, `totale_accrediti`, `totale_addebiti`, `data_iniziale`, `data_finale`. `process_pdf` ritorna il dict come terzo elemento del tuple (per template non-Intesa contiene chiavi a None).
+
+Box markdown in UI mostra variazione attesa (`saldo_finale - saldo_iniziale`), variazione movimenti (`avere - dare`), differenza, ✅/⚠ in base a `abs(diff) < 0.01 €`. Non blocca l'export.
+
 ### Configurazioni runtime (editabili da UI)
 
-- **`ec_converter/causali.json`**: mappatura codice causale → pattern descrizione. Match case-insensitive come sottostringa. 9 causali preconfigurate (bonifici, ADUE, spese bancarie, ecc.).
-- **`ec_converter/replace_descrizioni.json`**: regole sostituzione testo nelle descrizioni. Applicate in ordine, case-insensitive. Gestiscono typo OCR ("disposo" → "disposto"), abbreviazioni, pulizia prefissi. 22 regole preconfigurate.
+- **`ec_converter/causali.json`**: mappatura codice causale → pattern descrizione. Match case-insensitive come sottostringa. **11 causali** preconfigurate (POS 04, bonifici 27/48, ADUE 05, disposiz. 31, ricariche 37, prelievi 78, spese 66, versamenti 91, bollette 26, polizze 54).
+- **`ec_converter/replace_descrizioni.json`**: regole sostituzione testo nelle descrizioni. Applicate in ordine, case-insensitive. Gestiscono typo OCR ("disposo" → "disposto"), abbreviazioni, pulizia prefissi. **~38 regole** preconfigurate (incluse le 16 specifiche del layout Intesa ufficiale: POS Setefi, ADUE B2B, RIBA, commissioni, ricariche).
 
 ### Export CSV
 
