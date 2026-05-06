@@ -1,15 +1,14 @@
 {
   "causali": [
-    {"codice": "09", "nome": "Incassi POS al netto", "pattern": ["accredito pos al netto", "pos al netto esente", "pos al netto a pagament", "pos a pagamento", "pos al netto"]},
-    {"codice": "31", "nome": "Pagamento disposiz. elettroniche", "pattern": ["disposiz. elettroniche", "pagamento disposiz", "disposizioni elettroniche", "disposizione ri.ba", "ri.ba n."]},
+    {"codice": "09", "nome": "Incassi POS al netto", "pattern": ["accredito pos al netto", "pos al netto esente", "pos al netto a pagament", "pos a pagamento", "pos al netto","Accredito POS lordo"]},
+    {"codice": "31", "nome": "Pagamento disposiz. elettroniche", "pattern": ["disposiz. elettroniche", "pagamento disposiz", "disposizioni elettroniche", "disposizione ri.ba", "ri.ba n.","pagamento adue", "addebito diretto", "adue b2b", "pagamento adue b2b"]},
     {"codice": "78", "nome": "Prelevamento titolare", "pattern": ["prelevamento", "prelievo socio", "prelievo presso cassa"]},
-    {"codice": "66", "nome": "Spese bancarie", "pattern": ["canone carta", "commissioni spese", "commissione pagamento", "imposta di bollo", "imposta bollo", "competenze di chiusura", "costo bonifico", "commissioni pos", "commissioni transato", "canone pos", "canone spese diverse servizio pos", "sconto commissioni pos", "sconto da riduzione commiss"]},
+    {"codice": "66", "nome": "Spese bancarie", "pattern": ["canone carta", "commissioni spese", "commissione pagamento", "Commissioni bonifico", "competenze di chiusura", "costo bonifico", "commissioni pos", "commissioni transato", "canone pos", "canone spese diverse servizio pos", "sconto commissioni pos", "sconto da riduzione commiss"]},
     {"codice": "48", "nome": "Bonifico ricevuto", "pattern": ["bonifico a vostro favore", "bonifico ricevuto"]},
-    {"codice": "27", "nome": "Bonifico emesso", "pattern": ["bonifico da voi disposto", "bonifico a favore di"]},
-    {"codice": "05", "nome": "Pagamento ADUE/SDD", "pattern": ["pagamento adue", "addebito diretto", "adue b2b", "pagamento adue b2b"]},
     {"codice": "91", "nome": "Versamento contanti", "pattern": ["versamento contanti", "vers. contanti", "versam. contanti"]},
     {"codice": "54", "nome": "Premio polizza", "pattern": ["premio polizza", "addebito premio"]},
-    {"codice": "26", "nome": "Pagamento bolletta", "pattern": ["pagamento bolletta", "cbill", "pagopa"]},
-    {"codice": "37", "nome": "Ricarica utenza", "pattern": ["ricarica timcard", "ricarica vodafone", "ricarica wind", "ricarica iliad", "ricarica tim"]}
+    {"codice": "26", "nome": "Bonifico emesso", "pattern": ["bonifico da voi disposto", "bonifico a favore di","pagamento bolletta", "cbill", "pagopa"]},
+    {"codice": "37", "nome": "Ricarica utenza", "pattern": ["ricarica timcard", "ricarica vodafone", "ricarica wind", "ricarica iliad", "ricarica tim"]},
+    {"codice": "19", "nome": "Pagamento delega F24", "pattern": ["Pagamento delega F24","Pagamento delegata F24"]}
   ]
 }

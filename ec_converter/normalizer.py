@@ -287,16 +287,15 @@ def match_causale(descrizione: str, causali: Optional[list[dict]] = None) -> tup
 # Dato statico: è semantica contabile invariante, non configurabile dall'utente.
 CAUSALE_SEGNO: dict[str, str] = {
     "09": "A",  # Incassi POS al netto
-    "27": "D",  # Bonifico emesso
     "48": "A",  # Bonifico ricevuto
-    "05": "D",  # Pagamento ADUE/SDD
     "31": "D",  # Pagamento disposiz. elettroniche
     "66": "D",  # Spese bancarie
     "91": "A",  # Versamento contanti
     "78": "D",  # Prelevamento titolare
-    "26": "D",  # Pagamento bolletta
+    "26": "D",  # Bonifico emesso
     "54": "D",  # Premio polizza
     "37": "D",  # Ricarica utenza
+    "19": "D",  # Pagamento delega F24
 }
 
 
