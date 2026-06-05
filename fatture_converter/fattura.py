@@ -68,9 +68,9 @@ def parse_fattura(text: str, cf_cedente: str) -> Fattura:
             break
 
     # --- Numero documento ---
-    # Formato: "N.Documento         3 / PF/V     Data         31/01/2026"
+    # Formati visti: "N.Documento  3 / PF/V   Data ..." oppure "N.   416 / PF/V   Data ..."
     numero_documento = ""
-    m = re.search(r'N\.?\s*Documento\s+(.+?)\s{2,}Data\b', text, re.IGNORECASE)
+    m = re.search(r'\bN\.?\s*(?:Documento)?\s+(.+?)\s{2,}Data\b', text, re.IGNORECASE)
     if m:
         numero_documento = m.group(1).strip().replace(" ", "")
 
