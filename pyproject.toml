@@ -67,3 +67,21 @@ testpaths = ["tests"]
 # own modules use absolute imports like `from fatture_converter.fattura import ...`).
 pythonpath = [".", "ec_converter", "fatture_converter"]
 addopts = "-q"
+
+[tool.coverage.run]
+# Only the testable modules are measured: the Gradio UIs and the CLI/batch
+# entry-points (app.py, pipeline.py, process_fatture.py) need a live GPU /
+# vLLM / Gradio runtime and are exercised manually, not in unit tests.
+source = ["ec_converter", "fatture_converter"]
+omit = [
+    "ec_converter/app.py",
+    "ec_converter/pipeline.py",
+    "fatture_converter/process_fatture.py",
+]
+
+[tool.coverage.report]
+# Floor below which CI fails. Kept intentionally conservative: the testable
+# modules (normalizer, templates, fattura, csv exporters) are well covered,
+# but new code landing in the measured set shouldn't silently drop coverage.
+fail_under = 75
+show_missing = true

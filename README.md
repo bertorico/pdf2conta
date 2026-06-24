@@ -1,6 +1,7 @@
 # 📄 Italian Document OCR Stack — dots.ocr + vLLM + Ago Zucchetti
 
 [![CI](https://github.com/bertorico/pdf2conta/actions/workflows/ci.yml/badge.svg)](https://github.com/bertorico/pdf2conta/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-80%25-yellowgreen.svg)](#testing)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
 
@@ -267,11 +268,22 @@ pip install -e ".[dev]"
 ruff check .          # lint
 ruff format .         # format
 mypy                  # type-check (scoped)
-pytest                # tests
+pytest --cov          # tests + coverage
 pre-commit install    # run lint/format automatically on every commit
 ```
 
 CI (GitHub Actions) runs lint, format-check, mypy and pytest on every push and pull request.
+
+### <a id="testing"></a>Testing
+
+The unit suite (`tests/`, 131 tests) covers the pure, testable modules:
+amount/date/description normalization, bank-template parsing, invoice parsing
+and CSV export. Coverage is measured on these modules only — the Gradio UIs
+and the CLI/batch entry-points (`app.py`, `pipeline.py`, `process_fatture.py`)
+need a live GPU / vLLM / Gradio runtime and are exercised manually rather
+than in unit tests. The CI fails when coverage on the measured set drops
+below 75%; the badge above reflects the current value (update it when it
+shifts meaningfully).
 
 ---
 
