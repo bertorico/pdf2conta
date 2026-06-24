@@ -12,8 +12,8 @@ import csv
 import io
 from typing import Literal
 
-from templates.base import Movimento
 from normalizer import formatta_importo
+from templates.base import Movimento
 
 
 def export_csv(
@@ -89,5 +89,5 @@ def export_csv_to_file(
 ):
     """Salva il CSV su file."""
     content = export_csv(movimenti, modalita_importo, includi_causale, separatore, encoding)
-    with open(filepath, "w", encoding=encoding, newline='') as f:
+    with open(filepath, "w", encoding=encoding, newline="") as f:
         f.write(content)

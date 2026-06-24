@@ -36,15 +36,20 @@ def export_fatture_csv(
 
     # Header: a-g + h-p (3 gruppi x 3 colonne) + q-s
     header = [
-        "Tipo Documento", "Numero Documento", "Data Documento",
-        "CF Cedente", "CF Cessionario", "Nome", "Cognome",
+        "Tipo Documento",
+        "Numero Documento",
+        "Data Documento",
+        "CF Cedente",
+        "CF Cessionario",
+        "Nome",
+        "Cognome",
     ]
     for i in range(NUM_GRUPPI_ALIQUOTE):
         n = i + 1
         header.extend([f"Imponibile {n}", f"IVA {n}", f"Aliquota {n}"])
     # Colonne Q, R, S — duplicano l'aliquota % (richiesto da formato Ago)
     for i in range(NUM_GRUPPI_ALIQUOTE):
-        header.append(f"Aliquota Rip. {i+1}")
+        header.append(f"Aliquota Rip. {i + 1}")
     writer.writerow(header)
 
     # Righe
@@ -62,11 +67,13 @@ def export_fatture_csv(
         for i in range(NUM_GRUPPI_ALIQUOTE):
             if i < len(f.aliquote):
                 aliq = f.aliquote[i]
-                row.extend([
-                    _formatta_importo(aliq.netto),
-                    _formatta_importo(aliq.iva),
-                    str(aliq.aliquota),
-                ])
+                row.extend(
+                    [
+                        _formatta_importo(aliq.netto),
+                        _formatta_importo(aliq.iva),
+                        str(aliq.aliquota),
+                    ]
+                )
             else:
                 row.extend(["", "", ""])
         # Colonne Q, R, S — duplicano l'aliquota %
@@ -87,5 +94,5 @@ def export_fatture_csv_to_file(
 ):
     """Salva il CSV fatture su file."""
     content = export_fatture_csv(fatture, separatore)
-    with open(filepath, "w", encoding="utf-8", newline='') as f:
+    with open(filepath, "w", encoding="utf-8", newline="") as f:
         f.write(content)

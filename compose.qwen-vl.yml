@@ -34,7 +34,7 @@ services:
   # I client devono usare lo stesso nome modello servito sopra.
   dots-ocr-ui:
     environment:
-    
+
       - VLLM_URL=http://dots-ocr:8000
       - MODEL_NAME=Qwen/Qwen2.5-VL-3B-Instruct
 

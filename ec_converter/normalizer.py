@@ -6,10 +6,9 @@ Gestisce le anomalie tipiche dell'output OCR di dots.ocr.
 import json
 import re
 from pathlib import Path
-from typing import Optional
 
 
-def normalizza_importo(raw: str) -> Optional[float]:
+def normalizza_importo(raw: str) -> float | None:
     """
     Normalizza un importo OCR in float.
 
@@ -31,9 +30,9 @@ def normalizza_importo(raw: str) -> Optional[float]:
 
     # L'ultimo separatore (virgola o punto) seguito da esattamente 2 cifre finali
     # e' il separatore decimale. Tutto il resto sono migliaia da rimuovere.
-    match = re.match(r'^([\d.,]+)([.,])(\d{2})$', s)
+    match = re.match(r"^([\d.,]+)([.,])(\d{2})$", s)
     if match:
-        parte_intera = match.group(1).replace('.', '').replace(',', '')
+        parte_intera = match.group(1).replace(".", "").replace(",", "")
         decimali = match.group(3)
         try:
             return float(f"{parte_intera}.{decimali}")
@@ -41,14 +40,14 @@ def normalizza_importo(raw: str) -> Optional[float]:
             return None
 
     # Fallback: numero senza decimali (es. "154")
-    clean = s.replace('.', '').replace(',', '')
+    clean = s.replace(".", "").replace(",", "")
     if clean.isdigit():
         return float(clean)
 
     return None
 
 
-def formatta_importo(valore: float, migliaia: str = '.', decimali: str = ',') -> str:
+def formatta_importo(valore: float, migliaia: str = ".", decimali: str = ",") -> str:
     """
     Formatta un float in stringa con formato italiano: 2.500,00
 
@@ -63,11 +62,11 @@ def formatta_importo(valore: float, migliaia: str = '.', decimali: str = ',') ->
     # Prima: virgola migliaia -> placeholder
     # Poi: punto decimale -> virgola
     # Infine: placeholder -> punto
-    parti = parti.replace(',', '#').replace('.', decimali).replace('#', migliaia)
+    parti = parti.replace(",", "#").replace(".", decimali).replace("#", migliaia)
     return parti
 
 
-def normalizza_data(raw: str) -> Optional[str]:
+def normalizza_data(raw: str) -> str | None:
     """
     Normalizza una data OCR nel formato DD.MM.YYYY.
     Accetta formati: DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY.
@@ -77,7 +76,7 @@ def normalizza_data(raw: str) -> Optional[str]:
         return None
 
     s = raw.strip()
-    match = re.match(r'^(\d{2})[./-](\d{2})[./-](\d{4})$', s)
+    match = re.match(r"^(\d{2})[./-](\d{2})[./-](\d{4})$", s)
     if match:
         giorno, mese, anno = match.groups()
         g, m = int(giorno), int(mese)
@@ -89,7 +88,7 @@ def normalizza_data(raw: str) -> Optional[str]:
 def pulisci_descrizione(
     raw: str,
     max_length: int = 100,
-    extra_replaces: Optional[list[str]] = None,
+    extra_replaces: list[str] | None = None,
 ) -> str:
     """
     Pulisce e condensa la descrizione di un movimento bancario.
@@ -118,56 +117,63 @@ def pulisci_descrizione(
     # [0] Decodifica entità HTML comuni prima di qualsiasi altra operazione.
     # Necessario perché l'OCR può produrre "&gt;" invece di ">" nelle URL
     # e nei codici tecnici (es. "/GEST=&gt;SETEFI"), impedendo il match delle regex.
-    s = s.replace('&gt;', '>').replace('&lt;', '<').replace('&amp;', '&').replace('&apos;', "'").replace('&quot;', '"')
+    s = (
+        s.replace("&gt;", ">")
+        .replace("&lt;", "<")
+        .replace("&amp;", "&")
+        .replace("&apos;", "'")
+        .replace("&quot;", '"')
+    )
 
     # [1] Rimuovi tag HTML
-    s = re.sub(r'<br\s*/?>', ' ', s)
-    s = re.sub(r'</?(?:ul|li|ol|p|div|span|table|tr|td|th|thead|tbody)[^>]*>', ' ', s)
+    s = re.sub(r"<br\s*/?>", " ", s)
+    s = re.sub(r"</?(?:ul|li|ol|p|div|span|table|tr|td|th|thead|tbody)[^>]*>", " ", s)
 
     # [2] Applica replace configurabili (case-insensitive, sottostringa)
     s = applica_replace(s)
 
     # [3] Rimuovi asterisco iniziale
-    s = re.sub(r'^\s*\*\s*', '', s)
+    s = re.sub(r"^\s*\*\s*", "", s)
 
     # [4] Rimuovi codici tecnici (regex, non configurabili dall'utente)
     # Codici Setefi POS: "COMM:019281252 TC:21 MC /GEST=SETEFI"
-    s = re.sub(r'\bCOMM[:.]?\s*\d+\s*TC[:.]?\s*\d+\s*\w*\s*/?\s*GEST\s*=\s*\w+',
-               '', s, flags=re.IGNORECASE)
+    s = re.sub(
+        r"\bCOMM[:.]?\s*\d+\s*TC[:.]?\s*\d+\s*\w*\s*/?\s*GEST\s*=\s*\w+", "", s, flags=re.IGNORECASE
+    )
     # COD. DISP. ADUE: "COD. DISP.: 0126031956991360"
-    s = re.sub(r'\bCOD\.?\s*DISP\.?[:.]?\s*\d+', '', s, flags=re.IGNORECASE)
+    s = re.sub(r"\bCOD\.?\s*DISP\.?[:.]?\s*\d+", "", s, flags=re.IGNORECASE)
     # Mandato ADUE: "MANDATO: B40404091..."
-    s = re.sub(r'\bMANDATO[:.]?\s*\S+', '', s, flags=re.IGNORECASE)
+    s = re.sub(r"\bMANDATO[:.]?\s*\S+", "", s, flags=re.IGNORECASE)
     # BIC ORD/CIN
-    s = re.sub(r'\bBIC[.: ]+ORD[.: ]+\S+', '', s, flags=re.IGNORECASE)
+    s = re.sub(r"\bBIC[.: ]+ORD[.: ]+\S+", "", s, flags=re.IGNORECASE)
     # E2EID, NOTPROVIDED
-    s = re.sub(r'\bE2E(?:ID)?\S*', '', s)
-    s = re.sub(r'\bNOTPROVIDED\b', '', s)
+    s = re.sub(r"\bE2E(?:ID)?\S*", "", s)
+    s = re.sub(r"\bNOTPROVIDED\b", "", s)
     # NOME: prefisso ADUE (lasciamo il valore, togliamo la label)
-    s = re.sub(r'\bNOME\s*:\s*', '', s, flags=re.IGNORECASE)
+    s = re.sub(r"\bNOME\s*:\s*", "", s, flags=re.IGNORECASE)
     # Token tecnici brevi residui
-    s = re.sub(r'\bOTH(?:R)?\b', '', s)
-    s = re.sub(r'\bSUPP\b', '', s)
-    s = re.sub(r'\bCASH\b', '', s)
+    s = re.sub(r"\bOTH(?:R)?\b", "", s)
+    s = re.sub(r"\bSUPP\b", "", s)
+    s = re.sub(r"\bCASH\b", "", s)
     # Codici alfanumerici lunghi (IBAN, CRO, codici dispositiva)
-    s = re.sub(r'\b[A-Z0-9]{15,}\b', '', s)
+    s = re.sub(r"\b[A-Z0-9]{15,}\b", "", s)
 
     # [5] Extra replaces dinamici (titolare conto, ecc.)
     if extra_replaces:
         for trova in extra_replaces:
             if trova:
                 pattern = re.compile(re.escape(trova), re.IGNORECASE)
-                s = pattern.sub('', s)
+                s = pattern.sub("", s)
 
     # [6] Collassa spazi, rimuovi spazi attorno a punteggiatura
-    s = re.sub(r'\s+', ' ', s)
-    s = re.sub(r'\s*:\s*$', '', s)
+    s = re.sub(r"\s+", " ", s)
+    s = re.sub(r"\s*:\s*$", "", s)
     s = s.strip()
 
     # [7] Tronca a max_length senza spezzare parole
     if len(s) > max_length:
         troncato = s[:max_length]
-        ultimo_spazio = troncato.rfind(' ')
+        ultimo_spazio = troncato.rfind(" ")
         if ultimo_spazio > max_length * 0.6:
             s = troncato[:ultimo_spazio]
         else:
@@ -178,11 +184,11 @@ def pulisci_descrizione(
 
 # --- Replace configurabili ---
 
-_REPLACE_CACHE: Optional[list[dict]] = None
+_REPLACE_CACHE: list[dict] | None = None
 _REPLACE_PATH = Path(__file__).parent / "replace_descrizioni.json"
 
 
-def carica_replace(filepath: Optional[str] = None) -> list[dict]:
+def carica_replace(filepath: str | None = None) -> list[dict]:
     """
     Carica i replace dal file JSON.
     Ogni replace ha: trova, sostituisci, nota (opzionale).
@@ -191,13 +197,13 @@ def carica_replace(filepath: Optional[str] = None) -> list[dict]:
     path = Path(filepath) if filepath else _REPLACE_PATH
     if not path.exists():
         return []
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
     _REPLACE_CACHE = data.get("replace", [])
     return _REPLACE_CACHE
 
 
-def salva_replace(replace_list: list[dict], filepath: Optional[str] = None):
+def salva_replace(replace_list: list[dict], filepath: str | None = None):
     """Salva i replace su file JSON."""
     global _REPLACE_CACHE
     path = Path(filepath) if filepath else _REPLACE_PATH
@@ -206,7 +212,7 @@ def salva_replace(replace_list: list[dict], filepath: Optional[str] = None):
     _REPLACE_CACHE = replace_list
 
 
-def applica_replace(testo: str, replace_list: Optional[list[dict]] = None) -> str:
+def applica_replace(testo: str, replace_list: list[dict] | None = None) -> str:
     """
     Applica i replace configurabili al testo.
     Matching case-insensitive come sottostringa.
@@ -232,11 +238,11 @@ def applica_replace(testo: str, replace_list: Optional[list[dict]] = None) -> st
 
 # --- Causali ---
 
-_CAUSALI_CACHE: Optional[list[dict]] = None
+_CAUSALI_CACHE: list[dict] | None = None
 _CAUSALI_PATH = Path(__file__).parent / "causali.json"
 
 
-def carica_causali(filepath: Optional[str] = None) -> list[dict]:
+def carica_causali(filepath: str | None = None) -> list[dict]:
     """
     Carica le causali dal file JSON.
     Ogni causale ha: codice, nome, pattern (lista di stringhe).
@@ -245,13 +251,13 @@ def carica_causali(filepath: Optional[str] = None) -> list[dict]:
     path = Path(filepath) if filepath else _CAUSALI_PATH
     if not path.exists():
         return []
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
     _CAUSALI_CACHE = data.get("causali", [])
     return _CAUSALI_CACHE
 
 
-def salva_causali(causali: list[dict], filepath: Optional[str] = None):
+def salva_causali(causali: list[dict], filepath: str | None = None):
     """Salva le causali su file JSON."""
     global _CAUSALI_CACHE
     path = Path(filepath) if filepath else _CAUSALI_PATH
@@ -260,7 +266,9 @@ def salva_causali(causali: list[dict], filepath: Optional[str] = None):
     _CAUSALI_CACHE = causali
 
 
-def match_causale(descrizione: str, causali: Optional[list[dict]] = None) -> tuple[Optional[str], Optional[str]]:
+def match_causale(
+    descrizione: str, causali: list[dict] | None = None
+) -> tuple[str | None, str | None]:
     """
     Cerca una causale corrispondente alla descrizione.
 

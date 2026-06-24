@@ -40,12 +40,12 @@ _TIPO_DOC_PATTERNS = [
 def _normalizza_importo(raw: str) -> float:
     """Converte importo italiano (es. '3,38' o '3.420,00') in float."""
     s = raw.replace(" ", "").strip()
-    match = re.match(r'^([\d.,]+)([.,])(\d{2})$', s)
+    match = re.match(r"^([\d.,]+)([.,])(\d{2})$", s)
     if match:
-        parte_intera = match.group(1).replace('.', '').replace(',', '')
+        parte_intera = match.group(1).replace(".", "").replace(",", "")
         decimali = match.group(3)
         return float(f"{parte_intera}.{decimali}")
-    clean = s.replace('.', '').replace(',', '')
+    clean = s.replace(".", "").replace(",", "")
     if clean.isdigit():
         return float(clean)
     return 0.0
@@ -71,19 +71,19 @@ def parse_fattura(text: str, cf_cedente: str) -> Fattura:
     # --- Numero documento ---
     # Formati visti: "N.Documento  3 / PF/V   Data ..." oppure "N.   416 / PF/V   Data ..."
     numero_documento = ""
-    m = re.search(r'\bN\.?\s*(?:Documento)?\s+(.+?)\s{2,}Data\b', text, re.IGNORECASE)
+    m = re.search(r"\bN\.?\s*(?:Documento)?\s+(.+?)\s{2,}Data\b", text, re.IGNORECASE)
     if m:
         numero_documento = m.group(1).strip().replace(" ", "")
 
     # --- Data documento ---
     data_documento = ""
-    m = re.search(r'\bData\s+(\d{2}/\d{2}/\d{4})', text)
+    m = re.search(r"\bData\s+(\d{2}/\d{2}/\d{4})", text)
     if m:
         data_documento = m.group(1)
 
     # --- Codice fiscale cessionario ---
     # Il testo ha due "Cod.fis." — primo del cedente, secondo del cessionario
-    cf_matches = re.findall(r'Cod\.?\s*fis\.?\s+([A-Z0-9]{11,16})', text, re.IGNORECASE)
+    cf_matches = re.findall(r"Cod\.?\s*fis\.?\s+([A-Z0-9]{11,16})", text, re.IGNORECASE)
     cf_cessionario = ""
     for cf in cf_matches:
         cf_upper = cf.upper()
@@ -97,7 +97,7 @@ def parse_fattura(text: str, cf_cedente: str) -> Fattura:
     # E' una riga tutta maiuscola con almeno 2 parole, che non e' il cedente.
     nome_cessionario = ""
     cognome_cessionario = ""
-    lines = text.split('\n')
+    lines = text.split("\n")
     # Nomi noti del cedente da ignorare (da env NOME_CEDENTE, es. "FARMACIA ESEMPIO SRL")
     cedente_keywords = set(os.environ.get("NOME_CEDENTE", "").upper().split())
     for line in lines:
@@ -105,16 +105,20 @@ def parse_fattura(text: str, cf_cedente: str) -> Fattura:
         if not candidate:
             continue
         # Salta righe strutturali
-        if re.match(r'^(P\.?\s*IVA|Cod\.?\s*fis|Num\.|Uff\.|Capital|PIAZZA|FATTURA|N\.Doc)', candidate, re.IGNORECASE):
+        if re.match(
+            r"^(P\.?\s*IVA|Cod\.?\s*fis|Num\.|Uff\.|Capital|PIAZZA|FATTURA|N\.Doc)",
+            candidate,
+            re.IGNORECASE,
+        ):
             continue
         # La riga del nome: tutta maiuscola, almeno 2 parole, contiene lettere
-        if re.match(r'^[A-Z][A-Z\s/\'\.\-,]+$', candidate) and len(candidate.split()) >= 2:
+        if re.match(r"^[A-Z][A-Z\s/\'\.\-,]+$", candidate) and len(candidate.split()) >= 2:
             # Salta se e' il nome del cedente
             words = set(candidate.split())
             if words & cedente_keywords:
                 continue
             # Rimuovi tutto da "C/O" in poi
-            name_part = re.split(r'\s+C/O\b', candidate, flags=re.IGNORECASE)[0].strip()
+            name_part = re.split(r"\s+C/O\b", candidate, flags=re.IGNORECASE)[0].strip()
             parts = name_part.split()
             if len(parts) >= 2:
                 cognome_cessionario = parts[0]
@@ -126,19 +130,13 @@ def parse_fattura(text: str, cf_cedente: str) -> Fattura:
     # oppure aliquota esente: "45,00 Esenti   0,00"
     # Con pdftotext -layout gli spazi multipli separano le colonne
     aliquote = []
-    for m in re.finditer(
-        r'(\d[\d.,]*)\s+ALIQUOTA\s+(\d+)%\s+(\d[\d.,]*)',
-        text, re.IGNORECASE
-    ):
+    for m in re.finditer(r"(\d[\d.,]*)\s+ALIQUOTA\s+(\d+)%\s+(\d[\d.,]*)", text, re.IGNORECASE):
         netto = _normalizza_importo(m.group(1))
         aliquota_pct = int(m.group(2))
         iva = _normalizza_importo(m.group(3))
         aliquote.append(AliquotaIVA(netto=netto, iva=iva, aliquota=aliquota_pct))
     # Aliquota esente (0%): "45,00 Esenti   0,00"
-    for m in re.finditer(
-        r'(\d[\d.,]*)\s+Esenti\s+(\d[\d.,]*)',
-        text, re.IGNORECASE
-    ):
+    for m in re.finditer(r"(\d[\d.,]*)\s+Esenti\s+(\d[\d.,]*)", text, re.IGNORECASE):
         netto = _normalizza_importo(m.group(1))
         iva = _normalizza_importo(m.group(2))
         aliquote.append(AliquotaIVA(netto=netto, iva=iva, aliquota=0))

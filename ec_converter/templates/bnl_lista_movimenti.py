@@ -23,32 +23,33 @@ Differenze vs bnl.py (estratto conto):
 
 from bs4 import BeautifulSoup
 
-from normalizer import normalizza_importo, normalizza_data, pulisci_descrizione
+from normalizer import normalizza_data, normalizza_importo, pulisci_descrizione
 from templates.base import BankTemplate, Movimento
 
 
 class BNLListaMovimentiTemplate(BankTemplate):
-
     name = "bnl_lista_movimenti"
     display_name = "BNL (Lista Movimenti)"
 
     def _ha_tabella_movimenti(self, html: str) -> bool:
         """Riconosce il formato Lista Movimenti BNL."""
-        soup = BeautifulSoup(html, 'html.parser')
+        soup = BeautifulSoup(html, "html.parser")
         text = soup.get_text().lower()
         # Pattern specifici di questo formato
-        if 'lista movimenti' in text:
+        if "lista movimenti" in text:
             return True
-        if 'rag.soc' in text and 'operazione' in text and 'causale' in text:
+        if "rag.soc" in text and "operazione" in text and "causale" in text:
             return True
         # Controlla tabelle con 9+ colonne
-        for table in soup.find_all('table'):
-            rows = table.find_all('tr')
+        for table in soup.find_all("table"):
+            rows = table.find_all("tr")
             for row in rows:
-                cells = row.find_all(['td', 'th'])
+                cells = row.find_all(["td", "th"])
                 if len(cells) >= 8:
                     headers = [c.get_text(strip=True).lower() for c in cells]
-                    if any('operazione' in h for h in headers) and any('causale' in h for h in headers):
+                    if any("operazione" in h for h in headers) and any(
+                        "causale" in h for h in headers
+                    ):
                         return True
         return False
 
@@ -59,16 +60,16 @@ class BNLListaMovimentiTemplate(BankTemplate):
             if not self._ha_tabella_movimenti(html):
                 continue
 
-            soup = BeautifulSoup(html, 'html.parser')
-            for table in soup.find_all('table'):
-                rows = table.find_all('tr')
+            soup = BeautifulSoup(html, "html.parser")
+            for table in soup.find_all("table"):
+                rows = table.find_all("tr")
                 for row in rows:
-                    cells = row.find_all(['td', 'th'])
+                    cells = row.find_all(["td", "th"])
                     if not cells:
                         continue
 
                     # Ignora header
-                    if cells[0].name == 'th':
+                    if cells[0].name == "th":
                         continue
 
                     # Servono almeno 8 colonne (formato 9 col, ma OCR potrebbe unirne)
@@ -109,7 +110,9 @@ class BNLListaMovimentiTemplate(BankTemplate):
                     # Se non ci sono date valide, potrebbe essere un header o riga vuota
                     if data_op is None and data_val is None:
                         # Riga di continuazione
-                        desc_plain = self._get_plain_text(cells[idx_desc]) if len(cells) > idx_desc else ""
+                        desc_plain = (
+                            self._get_plain_text(cells[idx_desc]) if len(cells) > idx_desc else ""
+                        )
                         if desc_plain.strip() and movimenti_raw:
                             prev = movimenti_raw[-1]
                             prev.descrizione_raw += " " + desc_html
@@ -122,10 +125,17 @@ class BNLListaMovimentiTemplate(BankTemplate):
                     # Causale ABI
                     causale = causale_raw.strip() if causale_raw.strip().isdigit() else None
 
-                    desc_plain = self._get_plain_text(cells[idx_desc]) if len(cells) > idx_desc else ""
+                    desc_plain = (
+                        self._get_plain_text(cells[idx_desc]) if len(cells) > idx_desc else ""
+                    )
 
                     # Escludi righe non-movimento
-                    if desc_plain.strip().lower() in ('totale', 'totali', 'saldo iniziale', 'saldo finale'):
+                    if desc_plain.strip().lower() in (
+                        "totale",
+                        "totali",
+                        "saldo iniziale",
+                        "saldo finale",
+                    ):
                         continue
 
                     mov = Movimento(
@@ -155,10 +165,10 @@ class BNLListaMovimentiTemplate(BankTemplate):
             return None, None
 
         s = raw.strip()
-        is_negative = s.startswith('-')
+        is_negative = s.startswith("-")
 
         # Rimuovi il segno per la normalizzazione
-        s_unsigned = s.lstrip('-+')
+        s_unsigned = s.lstrip("-+")
         valore = normalizza_importo(s_unsigned)
 
         if valore is None:

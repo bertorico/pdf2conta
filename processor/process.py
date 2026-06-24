@@ -4,21 +4,20 @@ Batch PDF OCR Processor per dots.ocr
 Monitora la cartella /input e processa automaticamente i PDF trovati.
 """
 
-import os
-import time
-import json
-import csv
 import base64
+import csv
+import json
+import os
 import re
-import tempfile
 import shutil
-from pathlib import Path
-from typing import List, Dict, Any, Optional
+import tempfile
+import time
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 import requests
 from pdf2image import convert_from_path
-from PIL import Image
 
 # Configurazione da environment variables
 VLLM_URL = os.environ.get("VLLM_URL", "http://dots-ocr:8000")
@@ -63,11 +62,16 @@ def image_to_base64(image_path: Path) -> str:
     with open(image_path, "rb") as f:
         data = f.read()
     ext = image_path.suffix.lower().lstrip(".")
-    mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}.get(ext, "image/jpeg")
+    mime = {
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+        "webp": "image/webp",
+    }.get(ext, "image/jpeg")
     return f"data:{mime};base64,{base64.b64encode(data).decode()}"
 
 
-def pdf_to_images(pdf_path: Path, dpi: int = 200) -> List[Path]:
+def pdf_to_images(pdf_path: Path, dpi: int = 200) -> list[Path]:
     """
     Converte un PDF in una lista di immagini PNG.
     Restituisce la lista dei percorsi delle immagini create.
@@ -96,7 +100,7 @@ def pdf_to_images(pdf_path: Path, dpi: int = 200) -> List[Path]:
         return []
 
 
-def call_vllm_api(image_path: Path, prompt: str) -> Optional[str]:
+def call_vllm_api(image_path: Path, prompt: str) -> str | None:
     """
     Chiama l'API vLLM per processare un'immagine.
     Restituisce il testo estratto o None in caso di errore.
@@ -106,13 +110,15 @@ def call_vllm_api(image_path: Path, prompt: str) -> Optional[str]:
 
         payload = {
             "model": MODEL_NAME,
-            "messages": [{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt},
-                    {"type": "image_url", "image_url": {"url": img_b64}},
-                ],
-            }],
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": img_b64}},
+                    ],
+                }
+            ],
             "max_tokens": 2048,
             "temperature": 0.0,
         }
@@ -133,19 +139,19 @@ def call_vllm_api(image_path: Path, prompt: str) -> Optional[str]:
         return None
 
 
-def extract_markdown_tables(text: str) -> List[List[List[str]]]:
+def extract_markdown_tables(text: str) -> list[list[list[str]]]:
     """Estrae tutte le tabelle Markdown dal testo."""
     tables = []
     current_table = []
 
-    for line in text.split('\n'):
+    for line in text.split("\n"):
         stripped = line.strip()
-        if stripped.startswith('|') and stripped.endswith('|'):
+        if stripped.startswith("|") and stripped.endswith("|"):
             # Salta righe separatore (|---|---|)
-            if re.match(r'^\|[-| :]+\|$', stripped):
+            if re.match(r"^\|[-| :]+\|$", stripped):
                 continue
             # Estrai celle
-            cells = [c.strip() for c in stripped[1:-1].split('|')]
+            cells = [c.strip() for c in stripped[1:-1].split("|")]
             current_table.append(cells)
         else:
             if current_table:
@@ -158,7 +164,7 @@ def extract_markdown_tables(text: str) -> List[List[List[str]]]:
     return tables
 
 
-def export_results(pdf_name: str, pages_data: List[Dict[str, Any]]):
+def export_results(pdf_name: str, pages_data: list[dict[str, Any]]):
     """
     Esporta i risultati in vari formati:
     - Markdown (.md)
@@ -177,7 +183,7 @@ def export_results(pdf_name: str, pages_data: List[Dict[str, Any]]):
 
         for page in pages_data:
             f.write(f"## Pagina {page['page_number']}\n\n")
-            f.write(page['text'])
+            f.write(page["text"])
             f.write("\n\n---\n\n")
 
     log(f"✓ Salvato: {md_path.name}")
@@ -199,23 +205,20 @@ def export_results(pdf_name: str, pages_data: List[Dict[str, Any]]):
     # 3. Export CSV (solo se ci sono tabelle)
     all_tables = []
     for page in pages_data:
-        tables = extract_markdown_tables(page['text'])
+        tables = extract_markdown_tables(page["text"])
         for table in tables:
-            all_tables.append({
-                'page': page['page_number'],
-                'table': table
-            })
+            all_tables.append({"page": page["page_number"], "table": table})
 
     if all_tables:
         csv_path = base_name.with_name(base_name.name + "_tables.csv")
-        with open(csv_path, "w", encoding="utf-8-sig", newline='') as f:
-            writer = csv.writer(f, delimiter=';')
+        with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.writer(f, delimiter=";")
 
             for i, item in enumerate(all_tables):
                 if i > 0:
                     writer.writerow([])
-                writer.writerow([f"=== Pagina {item['page']} - Tabella {i+1} ==="])
-                writer.writerows(item['table'])
+                writer.writerow([f"=== Pagina {item['page']} - Tabella {i + 1} ==="])
+                writer.writerows(item["table"])
 
         log(f"✓ Salvato: {csv_path.name} ({len(all_tables)} tabelle)")
 
@@ -256,11 +259,13 @@ def process_pdf(pdf_path: Path) -> bool:
             log(f"✗ Errore elaborazione pagina {i}", "ERROR")
             continue
 
-        pages_data.append({
-            "page_number": i,
-            "text": text,
-            "image_file": img_path.name,
-        })
+        pages_data.append(
+            {
+                "page_number": i,
+                "text": text,
+                "image_file": img_path.name,
+            }
+        )
 
         log(f"✓ Pagina {i} completata ({len(text)} caratteri)")
 
@@ -342,11 +347,15 @@ def watch_folder():
                         if success:
                             move_to_processed(pdf_path)
                         else:
-                            log(f"PDF non spostato (errori durante elaborazione): {pdf_path.name}", "WARN")
+                            log(
+                                f"PDF non spostato (errori durante elaborazione): {pdf_path.name}",
+                                "WARN",
+                            )
 
                     except Exception as e:
                         log(f"Errore durante elaborazione di {pdf_path.name}: {e}", "ERROR")
                         import traceback
+
                         traceback.print_exc()
 
             # Attendi prima del prossimo controllo
@@ -360,6 +369,7 @@ def watch_folder():
         except Exception as e:
             log(f"Errore nel loop principale: {e}", "ERROR")
             import traceback
+
             traceback.print_exc()
             time.sleep(CHECK_INTERVAL)
 

@@ -11,6 +11,7 @@ parziale, e LangGraph lo fonde (merge) nello stato globale.
 """
 
 from typing import TypedDict
+
 from fatture_converter.fattura import Fattura
 
 

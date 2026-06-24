@@ -9,25 +9,24 @@ Differenze dal template generico intesa_sanpaolo:
 """
 
 import re
+
 from bs4 import BeautifulSoup
 
-from normalizer import normalizza_importo, normalizza_data, pulisci_descrizione
+from normalizer import normalizza_data, normalizza_importo, pulisci_descrizione
 from templates.base import BankTemplate, Movimento
 
-
 _PATTERN_COMPETENZE = re.compile(
-    r'dettaglio\s+competenze\s+di\s+chiusura|riepilogo\s+competenze\s+di\s+chiusura',
+    r"dettaglio\s+competenze\s+di\s+chiusura|riepilogo\s+competenze\s+di\s+chiusura",
     re.IGNORECASE,
 )
 
 _PATTERN_AVVISI = re.compile(
-    r'avvertenze\.|per\s+saperne\s+di\s+pi[uù]\.',
+    r"avvertenze\.|per\s+saperne\s+di\s+pi[uù]\.",
     re.IGNORECASE,
 )
 
 
 class IntesaSanpaoloUfficialeTemplate(BankTemplate):
-
     name = "intesa_sanpaolo_ufficiale"
     display_name = "Intesa Sanpaolo (Ufficiale)"
 
@@ -38,19 +37,19 @@ class IntesaSanpaoloUfficialeTemplate(BankTemplate):
         if _PATTERN_COMPETENZE.search(html) or _PATTERN_AVVISI.search(html):
             return False
 
-        soup = BeautifulSoup(html, 'html.parser')
-        for table in soup.find_all('table'):
-            headers = [th.get_text(strip=True).lower() for th in table.find_all('th')]
-            header_text = ' '.join(headers)
-            if 'data operazione' in header_text:
+        soup = BeautifulSoup(html, "html.parser")
+        for table in soup.find_all("table"):
+            headers = [th.get_text(strip=True).lower() for th in table.find_all("th")]
+            header_text = " ".join(headers)
+            if "data operazione" in header_text:
                 return True
-            if 'data' in header_text and ('descri' in header_text or 'addebit' in header_text):
+            if "data" in header_text and ("descri" in header_text or "addebit" in header_text):
                 return True
-            for row in table.find_all('tr'):
-                cells = row.find_all('td')
+            for row in table.find_all("tr"):
+                cells = row.find_all("td")
                 if len(cells) >= 5:
                     first = cells[0].get_text(strip=True)
-                    if re.match(r'^\d{2}\.\d{2}\.\d{4}$', first):
+                    if re.match(r"^\d{2}\.\d{2}\.\d{4}$", first):
                         return True
         return False
 
@@ -67,11 +66,11 @@ class IntesaSanpaoloUfficialeTemplate(BankTemplate):
             if not self._ha_tabella_movimenti(html):
                 continue
 
-            soup = BeautifulSoup(html, 'html.parser')
-            for table in soup.find_all('table'):
-                for row in table.find_all('tr'):
-                    cells = row.find_all(['td', 'th'])
-                    if not cells or cells[0].name == 'th':
+            soup = BeautifulSoup(html, "html.parser")
+            for table in soup.find_all("table"):
+                for row in table.find_all("tr"):
+                    cells = row.find_all(["td", "th"])
+                    if not cells or cells[0].name == "th":
                         continue
                     if len(cells) < 3:
                         continue
@@ -84,13 +83,20 @@ class IntesaSanpaoloUfficialeTemplate(BankTemplate):
                     desc_plain = self._get_plain_text(cells[2]) if len(cells) > 2 else ""
 
                     desc_lower = desc_plain.strip().lower()
-                    if desc_lower in ('totali', 'totale', 'saldo finale', 'saldo iniziale',
-                                      'totale accrediti', 'totale addebiti',
-                                      'a vostro credito', 'a vostro debito'):
+                    if desc_lower in (
+                        "totali",
+                        "totale",
+                        "saldo finale",
+                        "saldo iniziale",
+                        "totale accrediti",
+                        "totale addebiti",
+                        "a vostro credito",
+                        "a vostro debito",
+                    ):
                         continue
-                    if 'saldo inizial' in desc_lower or 'saldo final' in desc_lower:
+                    if "saldo inizial" in desc_lower or "saldo final" in desc_lower:
                         continue
-                    if desc_lower.startswith('totali') or desc_lower.startswith('totale '):
+                    if desc_lower.startswith("totali") or desc_lower.startswith("totale "):
                         continue
 
                     data_op = normalizza_data(data_op_raw)
@@ -98,14 +104,15 @@ class IntesaSanpaoloUfficialeTemplate(BankTemplate):
                     dare = normalizza_importo(dare_raw)
                     avere = normalizza_importo(avere_raw)
 
-                    is_continuation = (data_op is None and data_val is None)
+                    is_continuation = data_op is None and data_val is None
 
                     if is_continuation and movimenti_raw:
                         prev = movimenti_raw[-1]
                         if desc_plain.strip():
                             prev.descrizione_raw += " " + desc_html
                             prev.descrizione = pulisci_descrizione(
-                                prev.descrizione_raw, extra_replaces=extra,
+                                prev.descrizione_raw,
+                                extra_replaces=extra,
                             )
                         if dare is not None and prev.dare is None:
                             prev.dare = dare
@@ -122,7 +129,8 @@ class IntesaSanpaoloUfficialeTemplate(BankTemplate):
                             if prev.data_operazione == data_op:
                                 prev.descrizione_raw += " " + desc_html
                                 prev.descrizione = pulisci_descrizione(
-                                    prev.descrizione_raw, extra_replaces=extra,
+                                    prev.descrizione_raw,
+                                    extra_replaces=extra,
                                 )
                                 continue
 

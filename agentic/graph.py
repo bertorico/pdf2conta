@@ -23,12 +23,12 @@ import os
 import sys
 from glob import glob
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
 
-from fatture_converter.process_fatture import extract_text
-from fatture_converter.fattura import parse_fattura
 from agentic.state import FatturaState
 from agentic.validators import controlla_coerenza_iva
+from fatture_converter.fattura import parse_fattura
+from fatture_converter.process_fatture import extract_text
 
 # CF cedente: configurabile via variabile d'ambiente CF_CEDENTE.
 CF_CEDENTE = os.environ.get("CF_CEDENTE", "00000000000")
@@ -39,6 +39,7 @@ CF_CEDENTE = os.environ.get("CF_CEDENTE", "00000000000")
 # Ogni nodo riceve l'intera scatola (state) e restituisce SOLO i campi che
 # aggiorna. LangGraph si occupa di fondere il dict restituito nello stato globale.
 # ---------------------------------------------------------------------------
+
 
 def estrai(state: FatturaState) -> dict:
     """Nodo 1 — estrazione.
@@ -79,6 +80,7 @@ def correggi(state: FatturaState) -> dict:
 # del prossimo nodo verso cui andare. LangGraph la usa in add_conditional_edges.
 # ---------------------------------------------------------------------------
 
+
 def instrada(state: FatturaState) -> str:
     """Dopo 'valida', decide il ramo: 'correggi' se ci sono errori, altrimenti 'fine'."""
     if state["errori"]:
@@ -89,6 +91,7 @@ def instrada(state: FatturaState) -> str:
 # ---------------------------------------------------------------------------
 # Costruzione e compilazione del grafo
 # ---------------------------------------------------------------------------
+
 
 def costruisci_grafo():
     """Assembla il grafo LangGraph e lo compila in un'applicazione invocabile."""
@@ -152,9 +155,9 @@ if __name__ == "__main__":
     # --- Stampa risultati in formato leggibile ---
     f = stato_finale["fattura"]
 
-    print(f"{'='*55}")
+    print(f"{'=' * 55}")
     print(f"FATTURA — {pdf}")
-    print(f"{'='*55}")
+    print(f"{'=' * 55}")
     print(f"  Tipo documento  : {f.tipo_documento}")
     print(f"  Numero          : {f.numero_documento}")
     print(f"  Data            : {f.data_documento}")

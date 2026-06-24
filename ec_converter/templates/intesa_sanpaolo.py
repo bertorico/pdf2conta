@@ -18,14 +18,12 @@ Problemi noti gestiti:
 """
 
 from bs4 import BeautifulSoup
-from typing import Optional
 
-from normalizer import normalizza_importo, normalizza_data, pulisci_descrizione
+from normalizer import normalizza_data, normalizza_importo, pulisci_descrizione
 from templates.base import BankTemplate, Movimento
 
 
 class IntesaSanpaoloTemplate(BankTemplate):
-
     name = "intesa_sanpaolo"
     display_name = "Intesa Sanpaolo"
 
@@ -36,16 +34,16 @@ class IntesaSanpaoloTemplate(BankTemplate):
             if not self._ha_tabella_movimenti(html):
                 continue
 
-            soup = BeautifulSoup(html, 'html.parser')
-            for table in soup.find_all('table'):
-                rows = table.find_all('tr')
+            soup = BeautifulSoup(html, "html.parser")
+            for table in soup.find_all("table"):
+                rows = table.find_all("tr")
                 for row in rows:
-                    cells = row.find_all(['td', 'th'])
+                    cells = row.find_all(["td", "th"])
                     if not cells:
                         continue
 
                     # Ignora righe di header (<th>)
-                    if cells[0].name == 'th':
+                    if cells[0].name == "th":
                         continue
 
                     # Serve almeno 5 colonne (o gestisci colspan)
@@ -61,11 +59,16 @@ class IntesaSanpaoloTemplate(BankTemplate):
 
                     # Escludi riga "Totali"
                     desc_plain = self._get_plain_text(cells[2]) if len(cells) > 2 else ""
-                    if desc_plain.strip().lower() in ('totali', 'totale', 'saldo finale', 'saldo iniziale'):
+                    if desc_plain.strip().lower() in (
+                        "totali",
+                        "totale",
+                        "saldo finale",
+                        "saldo iniziale",
+                    ):
                         continue
 
                     # Escludi righe "Saldo iniziale" (spesso in thead con colspan)
-                    if 'saldo inizial' in desc_plain.lower():
+                    if "saldo inizial" in desc_plain.lower():
                         continue
 
                     data_op = normalizza_data(data_op_raw)
@@ -74,7 +77,7 @@ class IntesaSanpaoloTemplate(BankTemplate):
                     avere = normalizza_importo(avere_raw)
 
                     # Riga di continuazione: date vuote
-                    is_continuation = (data_op is None and data_val is None)
+                    is_continuation = data_op is None and data_val is None
 
                     if is_continuation and movimenti_raw:
                         # Appendi descrizione al movimento precedente

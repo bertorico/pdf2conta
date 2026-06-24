@@ -4,24 +4,26 @@ Pipeline di elaborazione: PDF -> immagini -> OCR -> parsing -> movimenti.
 Riutilizza il servizio dots-ocr (vLLM) gia' in esecuzione.
 """
 
+import base64
+import logging
 import os
 import re
-import base64
 import shutil
 import tempfile
-import logging
 from pathlib import Path
-from typing import Optional
 
 import requests
 from pdf2image import convert_from_path
 
-from templates import get_template, list_templates, detect_bank
-from templates.base import Movimento
 from normalizer import (
-    match_causale, carica_causali, normalizza_importo,
-    correggi_segno_per_causale, carica_replace,
+    carica_causali,
+    carica_replace,
+    correggi_segno_per_causale,
+    match_causale,
+    normalizza_importo,
 )
+from templates import detect_bank, get_template
+from templates.base import Movimento
 
 logger = logging.getLogger(__name__)
 
@@ -48,19 +50,21 @@ def _image_to_base64(image_path: Path) -> str:
     return f"data:image/png;base64,{base64.b64encode(data).decode()}"
 
 
-def _call_ocr(image_path: Path) -> Optional[str]:
+def _call_ocr(image_path: Path) -> str | None:
     """Chiama l'API vLLM per una singola immagine."""
     try:
         img_b64 = _image_to_base64(image_path)
         payload = {
             "model": MODEL_NAME,
-            "messages": [{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": OCR_PROMPT},
-                    {"type": "image_url", "image_url": {"url": img_b64}},
-                ],
-            }],
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": OCR_PROMPT},
+                        {"type": "image_url", "image_url": {"url": img_b64}},
+                    ],
+                }
+            ],
             "max_tokens": MAX_TOKENS,
             "temperature": 0.0,
         }
@@ -121,9 +125,12 @@ def estrai_saldi_intesa(pages_html: list[str]) -> dict:
              totale_addebiti, data_iniziale, data_finale (None se non trovati).
     """
     saldi = {
-        "saldo_iniziale": None, "saldo_finale": None,
-        "totale_accrediti": None, "totale_addebiti": None,
-        "data_iniziale": None, "data_finale": None,
+        "saldo_iniziale": None,
+        "saldo_finale": None,
+        "totale_accrediti": None,
+        "totale_addebiti": None,
+        "data_iniziale": None,
+        "data_finale": None,
     }
     if not pages_html:
         return saldi
@@ -131,38 +138,38 @@ def estrai_saldi_intesa(pages_html: list[str]) -> dict:
     text = pages_html[0]
     if len(pages_html) > 1:
         text += "\n" + pages_html[1]
-    plain = re.sub(r'<[^>]+>', ' ', text)
-    plain = re.sub(r'\s+', ' ', plain)
+    plain = re.sub(r"<[^>]+>", " ", text)
+    plain = re.sub(r"\s+", " ", plain)
 
-    def _segno_e_importo(segno_raw: Optional[str], importo_raw: str) -> Optional[float]:
+    def _segno_e_importo(segno_raw: str | None, importo_raw: str) -> float | None:
         v = normalizza_importo(importo_raw)
         if v is None:
             return None
         return -v if segno_raw and segno_raw.strip() == "-" else v
 
     m = re.search(
-        r'Saldo\s+iniziale\s+al\s+(\d{2}\.\d{2}\.\d{4}).*?([+\-])\s*([\d.,\s]+?)\s*€',
-        plain, re.IGNORECASE)
+        r"Saldo\s+iniziale\s+al\s+(\d{2}\.\d{2}\.\d{4}).*?([+\-])\s*([\d.,\s]+?)\s*€",
+        plain,
+        re.IGNORECASE,
+    )
     if m:
         saldi["data_iniziale"] = m.group(1)
         saldi["saldo_iniziale"] = _segno_e_importo(m.group(2), m.group(3))
 
     m = re.search(
-        r'Saldo\s+finale\s+al\s+(\d{2}\.\d{2}\.\d{4}).*?([+\-])\s*([\d.,\s]+?)\s*€',
-        plain, re.IGNORECASE)
+        r"Saldo\s+finale\s+al\s+(\d{2}\.\d{2}\.\d{4}).*?([+\-])\s*([\d.,\s]+?)\s*€",
+        plain,
+        re.IGNORECASE,
+    )
     if m:
         saldi["data_finale"] = m.group(1)
         saldi["saldo_finale"] = _segno_e_importo(m.group(2), m.group(3))
 
-    m = re.search(
-        r'Totale\s+accrediti\b.*?([+\-])\s*([\d.,\s]+?)\s*€',
-        plain, re.IGNORECASE)
+    m = re.search(r"Totale\s+accrediti\b.*?([+\-])\s*([\d.,\s]+?)\s*€", plain, re.IGNORECASE)
     if m:
         saldi["totale_accrediti"] = _segno_e_importo(m.group(1), m.group(2))
 
-    m = re.search(
-        r'Totale\s+addebiti\b.*?([+\-])\s*([\d.,\s]+?)\s*€',
-        plain, re.IGNORECASE)
+    m = re.search(r"Totale\s+addebiti\b.*?([+\-])\s*([\d.,\s]+?)\s*€", plain, re.IGNORECASE)
     if m:
         saldi["totale_addebiti"] = _segno_e_importo(m.group(1), m.group(2))
 
@@ -259,7 +266,9 @@ def process_pdf(
         # Step 4.5: Correggi inversioni dare/avere per causali univoche
         n_corretti = correggi_segno_per_causale(movimenti)
         if n_corretti:
-            logger.info(f"Corretti {n_corretti} movimenti per inversione dare/avere (causale univoca)")
+            logger.info(
+                f"Corretti {n_corretti} movimenti per inversione dare/avere (causale univoca)"
+            )
 
         return movimenti, template_name, saldi
     finally:

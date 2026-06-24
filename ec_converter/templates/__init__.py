@@ -1,8 +1,8 @@
 from .base import BankTemplate
-from .intesa_sanpaolo import IntesaSanpaoloTemplate
-from .intesa_sanpaolo_ufficiale import IntesaSanpaoloUfficialeTemplate
 from .bnl import BNLTemplate
 from .bnl_lista_movimenti import BNLListaMovimentiTemplate
+from .intesa_sanpaolo import IntesaSanpaoloTemplate
+from .intesa_sanpaolo_ufficiale import IntesaSanpaoloUfficialeTemplate
 
 TEMPLATES = {
     "intesa_sanpaolo_ufficiale": IntesaSanpaoloUfficialeTemplate,
@@ -18,10 +18,13 @@ TEMPLATES = {
 # e va prima del pattern generico "intesa sanpaolo".
 _DETECT_PATTERNS = [
     ("bnl_lista_movimenti", ["lista movimenti"]),
-    ("intesa_sanpaolo_ufficiale", [
-        "dettaglio movimenti del conto corrente",
-        "riepilogo conto corrente",
-    ]),
+    (
+        "intesa_sanpaolo_ufficiale",
+        [
+            "dettaglio movimenti del conto corrente",
+            "riepilogo conto corrente",
+        ],
+    ),
     ("intesa_sanpaolo", ["intesa sanpaolo", "c/c n."]),
     ("bnl", ["bnl", "bnp paribas", "banco nazionale del lavoro"]),
 ]

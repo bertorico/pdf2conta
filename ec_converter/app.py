@@ -12,24 +12,24 @@ Flusso:
 Tab aggiuntivo: gestione causali (aggiungi/modifica/elimina).
 """
 
-import os
-import json
 import logging
 import tempfile
 
 import gradio as gr
 import pandas as pd
 
-from pipeline import process_pdf, check_ocr_server
 from csv_exporter import export_csv
-from templates import list_templates, TEMPLATES
-from templates.base import Movimento
 from normalizer import (
-    formatta_importo, normalizza_importo,
-    carica_causali, salva_causali, match_causale,
-    carica_replace, salva_replace,
-    correggi_segno_per_causale,
+    carica_causali,
+    carica_replace,
+    formatta_importo,
+    normalizza_importo,
+    salva_causali,
+    salva_replace,
 )
+from pipeline import check_ocr_server, process_pdf
+from templates import TEMPLATES, list_templates
+from templates.base import Movimento
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -64,7 +64,11 @@ def elabora_pdf(pdf_file, template_display, titolare_conto, progress=gr.Progress
         return None, "Nessun file caricato.", ""
 
     if not check_ocr_server():
-        return None, "Server OCR (dots-ocr) non raggiungibile. Verificare che il servizio sia attivo.", ""
+        return (
+            None,
+            "Server OCR (dots-ocr) non raggiungibile. Verificare che il servizio sia attivo.",
+            "",
+        )
 
     template_name = get_template_name_from_display(template_display)
 
@@ -107,7 +111,9 @@ def elabora_pdf(pdf_file, template_display, titolare_conto, progress=gr.Progress
     tot_avere = sum(m.avere or 0 for m in movimenti)
     n_causali = sum(1 for m in movimenti if m.causale)
     n_corretti = sum(1 for m in movimenti if m.corretto)
-    msg += f"\nTotale Dare: {formatta_importo(tot_dare)} | Totale Avere: {formatta_importo(tot_avere)}"
+    msg += (
+        f"\nTotale Dare: {formatta_importo(tot_dare)} | Totale Avere: {formatta_importo(tot_avere)}"
+    )
     msg += f"\nDifferenza: {formatta_importo(tot_avere - tot_dare)}"
     msg += f"\nCausali assegnate: {n_causali}/{len(movimenti)}"
     if n_corretti:
@@ -142,7 +148,9 @@ def _formatta_quadratura(saldi: dict, tot_dare: float, tot_avere: float) -> str:
         if abs(diff) < 0.01:
             righe.append("- ✅ **Quadratura OK**")
         else:
-            righe.append(f"- ⚠️ **Differenza: {formatta_importo(diff)} €** — verifica manualmente i movimenti")
+            righe.append(
+                f"- ⚠️ **Differenza: {formatta_importo(diff)} €** — verifica manualmente i movimenti"
+            )
     else:
         righe.append(f"- Variazione movimenti: **{formatta_importo(variazione_movimenti)} €**")
     return "\n".join(righe)
@@ -151,15 +159,17 @@ def _formatta_quadratura(saldi: dict, tot_dare: float, tot_avere: float) -> str:
 def _movimenti_to_dataframe(movimenti: list[Movimento]) -> pd.DataFrame:
     rows = []
     for m in movimenti:
-        rows.append({
-            "Data Operazione": m.data_operazione,
-            "Data Valuta": m.data_valuta or "",
-            "Descrizione": m.descrizione,
-            "Causale": m.causale or "",
-            "Addebiti": formatta_importo(m.dare) if m.dare is not None else "",
-            "Accrediti": formatta_importo(m.avere) if m.avere is not None else "",
-            "Corretto": "⚠" if m.corretto else "",
-        })
+        rows.append(
+            {
+                "Data Operazione": m.data_operazione,
+                "Data Valuta": m.data_valuta or "",
+                "Descrizione": m.descrizione,
+                "Causale": m.causale or "",
+                "Addebiti": formatta_importo(m.dare) if m.dare is not None else "",
+                "Accrediti": formatta_importo(m.avere) if m.avere is not None else "",
+                "Corretto": "⚠" if m.corretto else "",
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -187,8 +197,7 @@ def genera_csv(df_data, modalita_importo, includi_causale):
     )
 
     tmp = tempfile.NamedTemporaryFile(
-        mode='w', suffix='.csv', prefix='ec_ago_',
-        delete=False, encoding='utf-8', newline=''
+        mode="w", suffix=".csv", prefix="ec_ago_", delete=False, encoding="utf-8", newline=""
     )
     tmp.write(csv_content)
     tmp.close()
@@ -212,31 +221,36 @@ def _dataframe_to_movimenti(df: pd.DataFrame) -> list[Movimento]:
         avere_val = normalizza_importo(str(row.get("Accrediti", "")))
         desc = str(row.get("Descrizione", "")).strip()
         causale = str(row.get("Causale", "")).strip() or None
-        movimenti.append(Movimento(
-            data_operazione=data_op,
-            data_valuta=str(row.get("Data Valuta", "")).strip() or None,
-            descrizione_raw=desc,
-            descrizione=desc,
-            dare=dare_val,
-            avere=avere_val,
-            causale=causale,
-            # "Corretto" non viene riletto: è derivato dalla logica, non dall'utente
-        ))
+        movimenti.append(
+            Movimento(
+                data_operazione=data_op,
+                data_valuta=str(row.get("Data Valuta", "")).strip() or None,
+                descrizione_raw=desc,
+                descrizione=desc,
+                dare=dare_val,
+                avere=avere_val,
+                causale=causale,
+                # "Corretto" non viene riletto: è derivato dalla logica, non dall'utente
+            )
+        )
     return movimenti
 
 
 # --- Tab Gestione Causali ---
+
 
 def carica_causali_tabella():
     """Carica le causali come DataFrame per la tabella Gradio."""
     causali = carica_causali()
     rows = []
     for c in causali:
-        rows.append({
-            "Codice": c["codice"],
-            "Nome": c["nome"],
-            "Pattern": ", ".join(c.get("pattern", [])),
-        })
+        rows.append(
+            {
+                "Codice": c["codice"],
+                "Nome": c["nome"],
+                "Pattern": ", ".join(c.get("pattern", [])),
+            }
+        )
     return pd.DataFrame(rows) if rows else pd.DataFrame(columns=["Codice", "Nome", "Pattern"])
 
 
@@ -269,7 +283,9 @@ def build_ui():
         with gr.Tabs():
             # --- Tab Converter ---
             with gr.Tab("Converter"):
-                gr.Markdown("Carica un estratto conto PDF, verifica i movimenti estratti e scarica il CSV.")
+                gr.Markdown(
+                    "Carica un estratto conto PDF, verifica i movimenti estratti e scarica il CSV."
+                )
 
                 with gr.Row():
                     with gr.Column(scale=1):
@@ -307,9 +323,19 @@ def build_ui():
                 quadratura_box = gr.Markdown("")
 
                 gr.Markdown("### Anteprima Movimenti")
-                gr.Markdown("*Puoi modificare i dati (inclusa la causale) nella tabella prima di generare il CSV.*")
+                gr.Markdown(
+                    "*Puoi modificare i dati (inclusa la causale) nella tabella prima di generare il CSV.*"
+                )
                 preview_table = gr.Dataframe(
-                    headers=["Data Operazione", "Data Valuta", "Descrizione", "Causale", "Addebiti", "Accrediti", "Corretto"],
+                    headers=[
+                        "Data Operazione",
+                        "Data Valuta",
+                        "Descrizione",
+                        "Causale",
+                        "Addebiti",
+                        "Accrediti",
+                        "Corretto",
+                    ],
                     interactive=True,
                     wrap=True,
                 )
@@ -396,16 +422,19 @@ def build_ui():
 
 # --- Funzioni tab Replace ---
 
+
 def carica_replace_tabella():
     """Carica i replace come DataFrame per la tabella Gradio."""
     replace_list = carica_replace()
     rows = []
     for r in replace_list:
-        rows.append({
-            "Trova": r.get("trova", ""),
-            "Sostituisci": r.get("sostituisci", ""),
-            "Nota": r.get("nota", ""),
-        })
+        rows.append(
+            {
+                "Trova": r.get("trova", ""),
+                "Sostituisci": r.get("sostituisci", ""),
+                "Nota": r.get("nota", ""),
+            }
+        )
     return pd.DataFrame(rows) if rows else pd.DataFrame(columns=["Trova", "Sostituisci", "Nota"])
 
 

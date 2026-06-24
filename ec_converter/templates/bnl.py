@@ -19,35 +19,33 @@ Differenze rispetto a Intesa Sanpaolo:
 """
 
 from bs4 import BeautifulSoup
-from typing import Optional
 
-from normalizer import normalizza_importo, normalizza_data, pulisci_descrizione
+from normalizer import normalizza_data, normalizza_importo, pulisci_descrizione
 from templates.base import BankTemplate, Movimento
 
 
 class BNLTemplate(BankTemplate):
-
     name = "bnl"
     display_name = "BNL (BNP Paribas)"
 
     def _ha_tabella_movimenti(self, html: str) -> bool:
         """BNL usa header molto descrittivi, cerco pattern specifici."""
-        soup = BeautifulSoup(html, 'html.parser')
-        tables = soup.find_all('table')
+        soup = BeautifulSoup(html, "html.parser")
+        tables = soup.find_all("table")
         for table in tables:
-            headers = [th.get_text(strip=True).lower() for th in table.find_all('th')]
-            header_text = ' '.join(headers)
+            headers = [th.get_text(strip=True).lower() for th in table.find_all("th")]
+            header_text = " ".join(headers)
             # Header BNL: "la banca ha registrato..." o "data contabile" o "caus. abi"
-            if 'caus' in header_text or 'contabile' in header_text or 'registrato' in header_text:
+            if "caus" in header_text or "contabile" in header_text or "registrato" in header_text:
                 return True
             # Oppure tabella con 6 colonne e date nella prima
-            rows = table.find_all('tr')
+            rows = table.find_all("tr")
             for row in rows:
-                cells = row.find_all('td')
+                cells = row.find_all("td")
                 if len(cells) >= 6:
                     first_text = cells[0].get_text(strip=True)
                     # Controlla se sembra una data DD/MM/YYYY
-                    if len(first_text) == 10 and first_text[2] == '/' and first_text[5] == '/':
+                    if len(first_text) == 10 and first_text[2] == "/" and first_text[5] == "/":
                         return True
         return False
 
@@ -58,16 +56,16 @@ class BNLTemplate(BankTemplate):
             if not self._ha_tabella_movimenti(html):
                 continue
 
-            soup = BeautifulSoup(html, 'html.parser')
-            for table in soup.find_all('table'):
-                rows = table.find_all('tr')
+            soup = BeautifulSoup(html, "html.parser")
+            for table in soup.find_all("table"):
+                rows = table.find_all("tr")
                 for row in rows:
-                    cells = row.find_all(['td', 'th'])
+                    cells = row.find_all(["td", "th"])
                     if not cells:
                         continue
 
                     # Ignora header
-                    if cells[0].name == 'th':
+                    if cells[0].name == "th":
                         continue
 
                     # BNL ha 6 colonne
@@ -85,10 +83,15 @@ class BNLTemplate(BankTemplate):
 
                     # Escludi righe non-movimento
                     desc_lower = desc_plain.strip().lower()
-                    if desc_lower in ('saldo iniziale', 'saldo finale', 'totale entrate',
-                                      'totale uscite', 'totale usite'):
+                    if desc_lower in (
+                        "saldo iniziale",
+                        "saldo finale",
+                        "totale entrate",
+                        "totale uscite",
+                        "totale usite",
+                    ):
                         continue
-                    if 'totale' in desc_lower and not data_op_raw:
+                    if "totale" in desc_lower and not data_op_raw:
                         continue
 
                     data_op = normalizza_data(data_op_raw)
@@ -97,7 +100,7 @@ class BNLTemplate(BankTemplate):
                     avere = normalizza_importo(avere_raw)
 
                     # Riga di continuazione
-                    is_continuation = (data_op is None and data_val is None)
+                    is_continuation = data_op is None and data_val is None
 
                     if is_continuation and movimenti_raw:
                         prev = movimenti_raw[-1]

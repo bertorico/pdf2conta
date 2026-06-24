@@ -246,7 +246,7 @@ CAUSALE_SEGNO: dict[str, str] = {
 
 **Quando aggiornare**: ogni volta che aggiungi una causale con semantica contabile univoca.
 
-**Come aggiornare**: 
+**Come aggiornare**:
 1. Apri `ec_converter/normalizer.py`.
 2. Vai alla riga ~288.
 3. Aggiungi la nuova entry: `"XX": "A"` oppure `"XX": "D"`.
@@ -385,4 +385,3 @@ Rimando alla sezione "Aggiungere un nuovo template bancario" in [`../CLAUDE.md`]
 | `normalizer.py` (`CAUSALE_SEGNO`) | Editor Python | `docker compose restart ec-converter-ui` |
 | `templates/` (nuovo template) | Nuovo file .py + import in `__init__.py` | `docker compose restart ec-converter-ui` |
 | `requirements.txt`, `Dockerfile` | Editor | `docker compose up -d --build ec-converter-ui` |
-
