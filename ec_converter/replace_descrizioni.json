@@ -4,7 +4,7 @@
       "trova": "Accredito POS al netto esente",
       "sostituisci": "POS al netto esente",
       "nota": "Intesa ufficiale: abbrevia POS Setefi"
-    },   
+    },
     {
       "trova": "Accredito POS al netto a pagament",
       "sostituisci": "POS a pagamento",
@@ -14,7 +14,7 @@
       "trova": "AccÑ€ÐµÐ´ito POS al netto esente",
       "sostituisci": "Accredito POS",
       "nota": "Intesa ufficiale: POS Setefi a pagamento"
-    },    
+    },
     {
       "trova": "Accredito POS al netto a pagamento",
       "sostituisci": "POS a pagamento",
@@ -34,7 +34,7 @@
       "trova": "/GEST=SETEFI",
       "sostituisci": "",
       "nota": "rimuovi /GEST=SETEFI"
-    },     
+    },
     {
       "trova": "Commissioni Transato POS",
       "sostituisci": "Commissioni POS",
@@ -199,6 +199,11 @@
       "trova": "SOCIETA&apos;",
       "sostituisci": "SOCIETA'",
       "nota": "BNL: fix entita' HTML apostrofo"
+    },
+    {
+      "trova": "per Commissi/S expense",
+      "sostituisci": "",
+      "nota": "BNL: rimuovi per Commissi/S expense"
     }
   ]
 }

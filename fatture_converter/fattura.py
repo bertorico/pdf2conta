@@ -1,9 +1,10 @@
 """
 Dataclass Fattura e parser per estrarre dati da testo di fatture cartacee.
-Formato atteso: fatture Azienda Esempio SRL (o simili).
+Formato atteso: fatture cartacee di un singolo cedente (nome configurabile via env NOME_CEDENTE).
 Il testo viene estratto con pdftotext -layout.
 """
 
+import os
 import re
 from dataclasses import dataclass, field
 
@@ -97,8 +98,8 @@ def parse_fattura(text: str, cf_cedente: str) -> Fattura:
     nome_cessionario = ""
     cognome_cessionario = ""
     lines = text.split('\n')
-    # Nomi noti del cedente da ignorare
-    cedente_keywords = {"FARMACIA", "ESEMPIO", "ESEMPIO", "SRL"}
+    # Nomi noti del cedente da ignorare (da env NOME_CEDENTE, es. "FARMACIA ESEMPIO SRL")
+    cedente_keywords = set(os.environ.get("NOME_CEDENTE", "").upper().split())
     for line in lines:
         candidate = line.strip()
         if not candidate:

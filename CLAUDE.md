@@ -135,7 +135,7 @@ Una riga per PDF; colonne a–s (tipo doc, numero, data, CF cedente/cessionario,
 
 File modulo (`fatture_converter/`): `fattura.py` (dataclass + `parse_fattura()`), `csv_exporter.py` (`export_fatture_csv()`), `process_fatture.py` (entry point).
 
-Config: env `CF_CEDENTE` (default `00000000000`).
+Config: env `CF_CEDENTE` (default `00000000000`) e `NOME_CEDENTE` (opzionale, nome del cedente da ignorare nel rilevamento del cessionario).
 
 ## Batch Processor (servizio `processor`)
 

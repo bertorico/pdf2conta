@@ -30,8 +30,7 @@ from fatture_converter.fattura import parse_fattura
 from agentic.state import FatturaState
 from agentic.validators import controlla_coerenza_iva
 
-# CF cedente: default documentato nel repo (Azienda Esempio SRL).
-# Può essere sovrascritto con la variabile d'ambiente CF_CEDENTE.
+# CF cedente: configurabile via variabile d'ambiente CF_CEDENTE.
 CF_CEDENTE = os.environ.get("CF_CEDENTE", "00000000000")
 
 
