@@ -63,5 +63,7 @@ files = ["ec_converter/normalizer.py", "fatture_converter/fattura.py"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # The code uses flat intra-folder imports, so expose those folders as roots.
-pythonpath = ["ec_converter", "fatture_converter"]
+# "." is also needed so `fatture_converter` is importable as a package (its
+# own modules use absolute imports like `from fatture_converter.fattura import ...`).
+pythonpath = [".", "ec_converter", "fatture_converter"]
 addopts = "-q"
