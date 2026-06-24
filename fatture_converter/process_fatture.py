@@ -13,20 +13,20 @@ Variabili d'ambiente:
     CF_CEDENTE    Codice fiscale cedente (obbligatoria)
 """
 
-import shutil
-import sys
-import subprocess
-import logging
 import argparse
+import logging
+import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
-from fatture_converter.fattura import parse_fattura
 from fatture_converter.csv_exporter import export_fatture_csv_to_file
+from fatture_converter.fattura import parse_fattura
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-import os
 CF_CEDENTE = os.environ.get("CF_CEDENTE", "")
 if not CF_CEDENTE:
     logger.warning("CF_CEDENTE non impostato: imposta la variabile d'ambiente (vedi .env.example)")
@@ -36,7 +36,9 @@ def extract_text(pdf_path: str) -> str:
     """Estrae il testo da un PDF usando pdftotext -layout."""
     result = subprocess.run(
         ["pdftotext", "-layout", str(pdf_path), "-"],
-        capture_output=True, text=True, timeout=30,
+        capture_output=True,
+        text=True,
+        timeout=30,
     )
     if result.returncode != 0:
         raise RuntimeError(f"pdftotext error: {result.stderr}")
@@ -127,14 +129,14 @@ def main():
         logger.warning("Nessuna fattura processata con successo.")
 
     # Riepilogo
-    print(f"\n{'='*50}")
-    print(f"RIEPILOGO")
-    print(f"{'='*50}")
+    print(f"\n{'=' * 50}")
+    print("RIEPILOGO")
+    print(f"{'=' * 50}")
     print(f"PDF trovati:     {len(pdf_files)}")
     print(f"Fatture OK:      {len(fatture)}")
     print(f"Errori:          {len(errori)}")
     if errori:
-        print(f"\nFile con errori:")
+        print("\nFile con errori:")
         for nome, err in errori:
             print(f"  - {nome}: {err}")
     if fatture:

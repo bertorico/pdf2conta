@@ -1,5 +1,11 @@
 # 📄 Italian Document OCR Stack — dots.ocr + vLLM + Ago Zucchetti
 
+[![CI](https://github.com/bertorico/pdf2conta/actions/workflows/ci.yml/badge.svg)](https://github.com/bertorico/pdf2conta/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/)
+
+> Repository: [github.com/bertorico/pdf2conta](https://github.com/bertorico/pdf2conta)
+
 A self-hosted document processing pipeline for Italian accounting workflows. Converts bank statements (estratti conto) and paper invoices into structured CSV files ready for import into **Ago Zucchetti**.
 
 Built around [dots.ocr](https://huggingface.co/rednote-hilab/dots.ocr), a specialized OCR model for structured documents, served via vLLM.
@@ -246,6 +252,26 @@ The normalizer uses pattern matching on the last separator + 2 digits to determi
 - All OCR inference runs locally via vLLM
 - No documents are sent to external services
 - The `dots.ocr` model runs entirely on your GPU
+
+---
+
+## Development
+
+Runtime dependencies are pinned per service (each `*/requirements.txt`); the host-side
+dev tooling lives in `pyproject.toml`.
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+
+ruff check .          # lint
+ruff format .         # format
+mypy                  # type-check (scoped)
+pytest                # tests
+pre-commit install    # run lint/format automatically on every commit
+```
+
+CI (GitHub Actions) runs lint, format-check, mypy and pytest on every push and pull request.
 
 ---
 

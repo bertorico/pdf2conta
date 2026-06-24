@@ -1,14 +1,136 @@
 {
   "causali": [
-    {"codice": "09", "nome": "Incassi POS al netto", "pattern": ["accredito pos al netto", "pos al netto esente", "pos al netto a pagament", "pos a pagamento", "pos al netto","Accredito POS lordo"]},
-    {"codice": "31", "nome": "Pagamento disposiz. elettroniche", "pattern": ["disposiz. elettroniche", "pagamento disposiz", "disposizioni elettroniche", "disposizione ri.ba", "ri.ba n.","pagamento adue", "addebito diretto", "adue b2b", "pagamento adue b2b"]},
-    {"codice": "78", "nome": "Prelevamento titolare", "pattern": ["prelevamento", "prelievo socio", "prelievo presso cassa"]},
-    {"codice": "66", "nome": "Spese bancarie", "pattern": ["canone carta", "commissioni spese", "commissione pagamento", "Commissioni bonifico", "competenze di chiusura", "costo bonifico", "commissioni pos", "commissioni transato", "canone pos", "canone spese diverse servizio pos", "sconto commissioni pos", "sconto da riduzione commiss"]},
-    {"codice": "48", "nome": "Bonifico ricevuto", "pattern": ["bonifico a vostro favore", "bonifico ricevuto"]},
-    {"codice": "91", "nome": "Versamento contanti", "pattern": ["versamento contanti", "vers. contanti", "versam. contanti"]},
-    {"codice": "54", "nome": "Premio polizza", "pattern": ["premio polizza", "addebito premio"]},
-    {"codice": "26", "nome": "Bonifico emesso", "pattern": ["bonifico da voi disposto", "bonifico a favore di","pagamento bolletta", "cbill", "pagopa"]},
-    {"codice": "37", "nome": "Ricarica utenza", "pattern": ["ricarica timcard", "ricarica vodafone", "ricarica wind", "ricarica iliad", "ricarica tim"]},
-    {"codice": "19", "nome": "Pagamento delega F24", "pattern": ["Pagamento delega F24","Pagamento delegata F24"]}
+    {
+      "codice": "09",
+      "nome": "Incassi POS al netto",
+      "pattern": [
+        "accredito pos al netto",
+        "pos al netto esente",
+        "pos al netto a pagament",
+        "pos a pagamento",
+        "pos al netto",
+        "Accredito POS lordo"
+      ]
+    },
+    {
+      "codice": "31",
+      "nome": "Pagamento disposiz. elettroniche",
+      "pattern": [
+        "disposiz. elettroniche",
+        "pagamento disposiz",
+        "disposizioni elettroniche",
+        "disposizione ri.ba",
+        "ri.ba n.",
+        "pagamento adue",
+        "addebito diretto",
+        "adue b2b",
+        "pagamento adue b2b"
+      ]
+    },
+    {
+      "codice": "78",
+      "nome": "Prelevamento titolare",
+      "pattern": [
+        "prelevamento",
+        "prelievo socio",
+        "prelievo presso cassa"
+      ]
+    },
+    {
+      "codice": "66",
+      "nome": "Spese bancarie",
+      "pattern": [
+        "canone carta",
+        "commissioni spese",
+        "commissione pagamento",
+        "Commissioni bonifico",
+        "competenze di chiusura",
+        "costo bonifico",
+        "commissioni pos",
+        "commissioni transato",
+        "canone pos",
+        "canone spese diverse servizio pos",
+        "sconto commissioni pos",
+        "sconto da riduzione commiss",
+        "ComMISSIONI e spese",
+        "Canone fisso mensile",
+        "Commissione e spese",
+        "Commissioni bonifico",
+        "Commissioni bonifico"
+      ]
+    },
+    {
+      "codice": "48",
+      "nome": "Bonifico ricevuto",
+      "pattern": [
+        "bonifico a vostro favore",
+        "bonifico ricevuto"
+      ]
+    },
+    {
+      "codice": "91",
+      "nome": "Versamento contanti",
+      "pattern": [
+        "versamento contanti",
+        "vers. contanti",
+        "versam. contanti",
+        "contanti su sport automatico"
+      ]
+    },
+    {
+      "codice": "54",
+      "nome": "Premio polizza",
+      "pattern": [
+        "premio polizza",
+        "addebito premio"
+      ]
+    },
+    {
+      "codice": "26",
+      "nome": "Bonifico emesso",
+      "pattern": [
+        "bonifico da voi disposto",
+        "bonifico a favore di",
+        "pagamento bolletta",
+        "cbill",
+        "pagopa",
+        "Bonifico a favore di",
+        "Accredito ADUE OrdinarioIO PeR GirocontO",
+        "Bonifico da Voi disposito a favore"
+      ]
+    },
+    {
+      "codice": "37",
+      "nome": "Ricarica utenza",
+      "pattern": [
+        "ricarica timcard",
+        "ricarica vodafone",
+        "ricarica wind",
+        "ricarica iliad",
+        "ricarica tim"
+      ]
+    },
+    {
+      "codice": "19",
+      "nome": "Pagamento delega F24",
+      "pattern": [
+        "Pagamento delega F24",
+        "Pagamento delegata F24"
+      ]
+    },
+    {
+      "codice": "74",
+      "nome": "Imposta di bollo e/c",
+      "pattern": [
+        "Imposta di billo E/c Rendiconto"
+      ]
+    },
+    {
+      "codice": "11",
+      "nome": "Differenziali su contratti derivati di tasso",
+      "pattern": [
+        "Differenziali su contratti derivati di tasso"
+      ]
+    }
   ]
 }

@@ -1,6 +1,6 @@
-gradio>=4.0
-pandas
-requests
-pdf2image
-Pillow
-beautifulsoup4
+gradio==6.19.0
+pandas==3.0.3
+requests==2.34.2
+pdf2image==1.17.0
+Pillow==12.2.0
+beautifulsoup4==4.15.0

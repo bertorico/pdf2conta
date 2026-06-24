@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdf2conta"
+version = "0.1.0"
+description = "Self-hosted OCR stack that converts Italian bank statements and paper invoices into Ago Zucchetti CSV files."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Riccardo Bettoni" }]
+keywords = ["ocr", "vllm", "dots.ocr", "bank-statement", "invoice", "accounting", "self-hosted"]
+
+# Runtime dependencies are intentionally NOT declared here: each Docker service
+# pins its own set in its own requirements.txt (the build context only copies
+# that service's folder). This section covers only the developer tooling used
+# to lint, type-check and test the repository from the host.
+[project.optional-dependencies]
+dev = [
+    "ruff==0.15.19",      # pinned: formatting/lint output is version-sensitive (keeps CI stable)
+    "mypy>=2.1.0",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "beautifulsoup4==4.15.0",  # needed to import ec_converter.templates during test collection
+]
+
+[project.urls]
+Repository = "https://github.com/bertorico/pdf2conta"
+
+# ---------------------------------------------------------------------------
+# Tooling configuration
+# ---------------------------------------------------------------------------
+
+[tool.setuptools]
+# This repo is a collection of independent Docker services, not an installable
+# library. `pip install -e .[dev]` exists only to pull the dev tooling above;
+# there is no importable top-level package to discover.
+py-modules = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Conservative starting set; broaden (B, SIM, ...) as the codebase is hardened.
+select = ["E", "F", "I", "UP"]
+# Line length is enforced by the formatter; E501 only fires on un-wrappable
+# string literals (prompts, markdown), so we let the formatter own width.
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["normalizer", "templates", "pipeline", "csv_exporter", "fattura"]
+
+[tool.mypy]
+python_version = "3.12"
+# Bare intra-folder imports (e.g. `from normalizer import ...`) resolve via these.
+mypy_path = ["ec_converter", "fatture_converter"]
+ignore_missing_imports = true
+# Scoped to the stdlib-clean, well-typed modules for now; widen incrementally.
+files = ["ec_converter/normalizer.py", "fatture_converter/fattura.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The code uses flat intra-folder imports, so expose those folders as roots.
+pythonpath = ["ec_converter", "fatture_converter"]
+addopts = "-q"

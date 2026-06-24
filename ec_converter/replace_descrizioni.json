@@ -204,6 +204,11 @@
       "trova": "per Commissi/S expense",
       "sostituisci": "",
       "nota": "BNL: rimuovi per Commissi/S expense"
+    },
+    {
+      "trova": "Bonifico da Voii disposto",
+      "sostituisci": "Bonifico da voi disposto",
+      "nota": "BNL: Boonifico"
     }
   ]
 }
