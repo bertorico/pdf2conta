@@ -1,0 +1,54 @@
+# Override sperimentale: usa Qwen2.5-VL-3B al posto di dots.ocr come backend OCR.
+#
+# Avvio:
+#   docker compose -f compose.yml -f compose.qwen-vl.yml up -d dots-ocr
+# (il merge sovrascrive solo image/command/environment del servizio dots-ocr;
+#  porte, volumi, GPU e healthcheck restano quelli del compose.yml base)
+#
+# Per tornare a dots.ocr: riavvia senza il "-f compose.qwen-vl.yml".
+#
+# NOTE su RTX 3080 (10GB):
+#  - Qwen2.5-VL-3B-Instruct in fp16 pesa ~7GB → gpu-memory-utilization e
+#    max-model-len tenuti bassi per lasciare spazio alla KV-cache.
+#  - Se vai in OOM: abbassa max-pixels (es. 401408) o passa alla variante AWQ
+#    Qwen/Qwen2.5-VL-3B-Instruct-AWQ aggiungendo "--quantization awq".
+#  - Qwen è mainline in vLLM: NON serve --trust-remote-code.
+#  - Differenza chiave vs dots.ocr: il processore vuole min_pixels/max_pixels
+#    (dots.ocr usava solo max_pixels).
+
+services:
+
+  dots-ocr:
+    image: vllm/vllm-openai:v0.11.0
+    command: >
+      --model Qwen/Qwen2.5-VL-3B-Instruct
+      --served-model-name Qwen/Qwen2.5-VL-3B-Instruct
+      --gpu-memory-utilization 0.85
+      --max-model-len 8192
+      --limit-mm-per-prompt '{"image": 1}'
+      --enforce-eager
+      --mm-processor-kwargs '{"min_pixels": 50176, "max_pixels": 602112}'
+      --host 0.0.0.0
+      --port 8000
+
+  # I client devono usare lo stesso nome modello servito sopra.
+  dots-ocr-ui:
+    environment:
+    
+      - VLLM_URL=http://dots-ocr:8000
+      - MODEL_NAME=Qwen/Qwen2.5-VL-3B-Instruct
+
+  ec-converter-ui:
+    environment:
+      - VLLM_URL=http://dots-ocr:8000
+      - MODEL_NAME=Qwen/Qwen2.5-VL-3B-Instruct
+      - DPI=200
+      - MAX_TOKENS=4096
+
+  processor:
+    environment:
+      - VLLM_URL=http://dots-ocr:8000
+      - MODEL_NAME=Qwen/Qwen2.5-VL-3B-Instruct
+      - CHECK_INTERVAL=30
+      - DPI=200
+      - PROMPT_MODE=full
