@@ -41,6 +41,126 @@ _current_saldi: dict = {}
 AUTO_DETECT_LABEL = "Auto-detect"
 
 
+# ---------------------------------------------------------------------------
+# Tema custom + CSS
+# ---------------------------------------------------------------------------
+
+CUSTOM_THEME = gr.themes.Soft(
+    primary_hue="emerald",
+    secondary_hue="slate",
+    neutral_hue="slate",
+    radius_size="lg",
+    font=[gr.themes.GoogleFont("Inter"), "system-ui", "sans-serif"],
+    font_mono=[gr.themes.GoogleFont("JetBrains Mono"), "ui-monospace", "monospace"],
+)
+
+CUSTOM_CSS = """
+/* Header */
+#ec-header {
+    border-bottom: 1px solid var(--block-border-color);
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+}
+#ec-header h1 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+#ec-header h1 .ec-logo {
+    font-size: 1.4em;
+}
+#ec-header .ec-sub {
+    color: var(--body-text-color-subdued);
+    margin: 0.25rem 0 0 0;
+    font-size: 0.92rem;
+}
+
+/* KPI cards */
+.ec-kpi-row { gap: 0.75rem; }
+.ec-kpi {
+    border: 1px solid var(--block-border-color);
+    border-radius: var(--radius-lg);
+    padding: 0.65rem 0.85rem;
+    background: var(--block-background-fill);
+    text-align: center;
+}
+.ec-kpi .ec-kpi-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--body-text-color-subdued);
+}
+.ec-kpi .ec-kpi-value {
+    font-family: var(--font-mono);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-top: 0.15rem;
+}
+.ec-kpi.is-ok .ec-kpi-value { color: var(--color-accent-500, #10b981); }
+.ec-kpi.is-warn .ec-kpi-value { color: var(--color-yellow-500, #d97706); }
+
+/* Tabella movimenti: zebra + sticky header */
+.gradio-container .table-wrap table tbody tr:nth-child(even) td {
+    background: color-mix(in srgb, var(--block-background-fill) 92%, var(--body-text-color) 4%);
+}
+
+/* Footer */
+#ec-footer {
+    margin-top: 1.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--block-border-color);
+    color: var(--body-text-color-subdued);
+    font-size: 0.8rem;
+    text-align: center;
+}
+"""
+
+HEADER_HTML = """
+<div id="ec-header">
+  <h1><span class="ec-logo"></span> Estratto Conto → CSV Ago Zucchetti</h1>
+  <p class="ec-sub">Carica un PDF, verifica i movimenti estratti e scarica il CSV pronto per l'import in contabilità.</p>
+</div>
+"""
+
+FOOTER_HTML = '<div id="ec-footer">EC Converter · OCR locale con dots.ocr</div>'
+
+
+def _kpi_cards(tot_dare: float, tot_avere: float, n_causali: int, n_mov: int) -> str:
+    """Render HTML per le KPI card (totali + quadratura sintetica)."""
+    diff = tot_avere - tot_dare
+    diff_cls = "is-ok" if abs(diff) < 0.01 else "is-warn"
+    return f"""
+    <div class="ec-kpi-row" style="display:flex;">
+      <div class="ec-kpi" style="flex:1">
+        <div class="ec-kpi-label">Movimenti</div>
+        <div class="ec-kpi-value">{n_mov}</div>
+      </div>
+      <div class="ec-kpi" style="flex:1">
+        <div class="ec-kpi-label">Totale Addebiti</div>
+        <div class="ec-kpi-value">{formatta_importo(tot_dare)}</div>
+      </div>
+      <div class="ec-kpi" style="flex:1">
+        <div class="ec-kpi-label">Totale Accrediti</div>
+        <div class="ec-kpi-value">{formatta_importo(tot_avere)}</div>
+      </div>
+      <div class="ec-kpi {diff_cls}" style="flex:1">
+        <div class="ec-kpi-label">Differenza</div>
+        <div class="ec-kpi-value">{formatta_importo(diff)}</div>
+      </div>
+      <div class="ec-kpi" style="flex:1">
+        <div class="ec-kpi-label">Causali</div>
+        <div class="ec-kpi-value">{n_causali}/{n_mov}</div>
+      </div>
+    </div>
+    """
+
+
+# ---------------------------------------------------------------------------
+# Logica (inalterata rispetto alla versione precedente)
+# ---------------------------------------------------------------------------
+
+
 def get_template_choices() -> list[str]:
     choices = [AUTO_DETECT_LABEL]
     choices.extend(TEMPLATES[k]().display_name for k in list_templates())
@@ -61,12 +181,13 @@ def elabora_pdf(pdf_file, template_display, titolare_conto, progress=gr.Progress
     global _current_movimenti, _current_saldi
 
     if pdf_file is None:
-        return None, "Nessun file caricato.", ""
+        return None, "Nessun file caricato.", "", ""
 
     if not check_ocr_server():
         return (
             None,
             "Server OCR (dots-ocr) non raggiungibile. Verificare che il servizio sia attivo.",
+            "",
             "",
         )
 
@@ -91,10 +212,10 @@ def elabora_pdf(pdf_file, template_display, titolare_conto, progress=gr.Progress
         )
     except Exception as e:
         logger.exception("Errore durante l'elaborazione")
-        return None, f"Errore: {e}", ""
+        return None, f"Errore: {e}", "", ""
 
     if not movimenti:
-        return None, "Nessun movimento trovato nel PDF.", ""
+        return None, "Nessun movimento trovato nel PDF.", "", ""
 
     _current_movimenti = movimenti
     _current_saldi = saldi or {}
@@ -119,9 +240,10 @@ def elabora_pdf(pdf_file, template_display, titolare_conto, progress=gr.Progress
     if n_corretti:
         msg += f"\nCorretti {n_corretti} movimenti per inversione dare/avere (causale univoca)"
 
+    kpi_html = _kpi_cards(tot_dare, tot_avere, n_causali, len(movimenti))
     quadratura = _formatta_quadratura(saldi or {}, tot_dare, tot_avere)
 
-    return df, msg, quadratura
+    return df, msg, quadratura, kpi_html
 
 
 def _formatta_quadratura(saldi: dict, tot_dare: float, tot_avere: float) -> str:
@@ -273,20 +395,57 @@ def salva_causali_tabella(df_causali):
     return f"Salvate {len(causali)} causali."
 
 
+# --- Funzioni tab Replace ---
+
+
+def carica_replace_tabella():
+    """Carica i replace come DataFrame per la tabella Gradio."""
+    replace_list = carica_replace()
+    rows = []
+    for r in replace_list:
+        rows.append(
+            {
+                "Trova": r.get("trova", ""),
+                "Sostituisci": r.get("sostituisci", ""),
+                "Nota": r.get("nota", ""),
+            }
+        )
+    return pd.DataFrame(rows) if rows else pd.DataFrame(columns=["Trova", "Sostituisci", "Nota"])
+
+
+def salva_replace_tabella(df_replace):
+    """Salva i replace dalla tabella Gradio al file JSON."""
+    if df_replace is None or (isinstance(df_replace, pd.DataFrame) and df_replace.empty):
+        return "Nessun replace da salvare."
+
+    replace_list = []
+    for _, row in df_replace.iterrows():
+        trova = str(row.get("Trova", "")).strip()
+        sostituisci = str(row.get("Sostituisci", ""))
+        nota = str(row.get("Nota", "")).strip()
+        if not trova:
+            continue
+        entry = {"trova": trova, "sostituisci": sostituisci}
+        if nota:
+            entry["nota"] = nota
+        replace_list.append(entry)
+
+    salva_replace(replace_list)
+    return f"Salvati {len(replace_list)} replace."
+
+
+# ---------------------------------------------------------------------------
+# UI
+# ---------------------------------------------------------------------------
+
+
 def build_ui():
-    with gr.Blocks(
-        title="EC Converter - Estratto Conto PDF -> CSV Ago",
-        theme=gr.themes.Soft(),
-    ) as app:
-        gr.Markdown("# Estratto Conto PDF -> CSV Ago Zucchetti")
+    with gr.Blocks(title="EC Converter - Estratto Conto PDF -> CSV Ago") as app:
+        gr.HTML(HEADER_HTML)
 
         with gr.Tabs():
             # --- Tab Converter ---
             with gr.Tab("Converter"):
-                gr.Markdown(
-                    "Carica un estratto conto PDF, verifica i movimenti estratti e scarica il CSV."
-                )
-
                 with gr.Row():
                     with gr.Column(scale=1):
                         pdf_input = gr.File(
@@ -299,16 +458,21 @@ def build_ui():
                             choices=get_template_choices(),
                             value=AUTO_DETECT_LABEL,
                         )
-                        titolare_input = gr.Textbox(
-                            label="Titolare conto (opzionale)",
-                            placeholder="Es. FARMACIA ESEMPIO",
-                            info="Se valorizzato, il nome viene rimosso dalle descrizioni POS (utile per Intesa ufficiale).",
-                        )
+                        with gr.Accordion("Opzioni avanzate", open=False):
+                            titolare_input = gr.Textbox(
+                                label="Titolare conto (opzionale)",
+                                placeholder="Es. FARMACIA ESEMPIO",
+                                info=(
+                                    "Se valorizzato, il nome viene rimosso dalle descrizioni POS "
+                                    "(utile per Intesa ufficiale)."
+                                ),
+                            )
                         btn_elabora = gr.Button("Elabora PDF", variant="primary")
 
                     with gr.Column(scale=1):
+                        gr.Markdown("#### Export CSV")
                         modalita_importo = gr.Radio(
-                            label="Modalita' importo CSV",
+                            label="Modalità importo",
                             choices=["Due colonne (Dare/Avere)", "Colonna unica (con segno +/-)"],
                             value="Due colonne (Dare/Avere)",
                         )
@@ -320,6 +484,7 @@ def build_ui():
                         csv_output = gr.File(label="Download CSV")
 
                 status_msg = gr.Textbox(label="Stato", interactive=False, lines=4)
+                kpi_box = gr.HTML("")
                 quadratura_box = gr.Markdown("")
 
                 gr.Markdown("### Anteprima Movimenti")
@@ -343,7 +508,7 @@ def build_ui():
                 btn_elabora.click(
                     fn=elabora_pdf,
                     inputs=[pdf_input, template_choice, titolare_input],
-                    outputs=[preview_table, status_msg, quadratura_box],
+                    outputs=[preview_table, status_msg, quadratura_box, kpi_box],
                 )
                 btn_csv.click(
                     fn=genera_csv,
@@ -417,48 +582,11 @@ def build_ui():
                     outputs=[replace_table],
                 )
 
+        gr.HTML(FOOTER_HTML)
+
     return app
-
-
-# --- Funzioni tab Replace ---
-
-
-def carica_replace_tabella():
-    """Carica i replace come DataFrame per la tabella Gradio."""
-    replace_list = carica_replace()
-    rows = []
-    for r in replace_list:
-        rows.append(
-            {
-                "Trova": r.get("trova", ""),
-                "Sostituisci": r.get("sostituisci", ""),
-                "Nota": r.get("nota", ""),
-            }
-        )
-    return pd.DataFrame(rows) if rows else pd.DataFrame(columns=["Trova", "Sostituisci", "Nota"])
-
-
-def salva_replace_tabella(df_replace):
-    """Salva i replace dalla tabella Gradio al file JSON."""
-    if df_replace is None or (isinstance(df_replace, pd.DataFrame) and df_replace.empty):
-        return "Nessun replace da salvare."
-
-    replace_list = []
-    for _, row in df_replace.iterrows():
-        trova = str(row.get("Trova", "")).strip()
-        sostituisci = str(row.get("Sostituisci", ""))
-        nota = str(row.get("Nota", "")).strip()
-        if not trova:
-            continue
-        entry = {"trova": trova, "sostituisci": sostituisci}
-        if nota:
-            entry["nota"] = nota
-        replace_list.append(entry)
-
-    salva_replace(replace_list)
-    return f"Salvati {len(replace_list)} replace."
 
 
 if __name__ == "__main__":
     app = build_ui()
-    app.launch(server_name="0.0.0.0", server_port=7860)
+    app.launch(server_name="0.0.0.0", server_port=7860, theme=CUSTOM_THEME, css=CUSTOM_CSS)
