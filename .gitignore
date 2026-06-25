@@ -33,6 +33,7 @@ secrets/
 credentials.json
 
 .claude
+.playwright-mcp/
 
 *.tar.gz
 *.zip

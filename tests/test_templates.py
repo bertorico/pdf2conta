@@ -20,12 +20,13 @@ from templates import detect_bank, get_template, list_templates
 # ---------------------------------------------------------------------------
 
 
-def test_list_templates_restituisce_i_quattro_template():
+def test_list_templates_restituisce_i_cinque_template():
     assert set(list_templates()) == {
         "intesa_sanpaolo_ufficiale",
         "intesa_sanpaolo",
         "bnl",
         "bnl_lista_movimenti",
+        "bnl_pos",
     }
 
 

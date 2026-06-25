@@ -9,7 +9,8 @@
         "pos al netto a pagament",
         "pos a pagamento",
         "pos al netto",
-        "Accredito POS lordo"
+        "Accredito POS lordo",
+        "incasso pagamento"
       ]
     },
     {
@@ -56,7 +57,10 @@
         "Canone fisso mensile",
         "Commissione e spese",
         "Commissioni bonifico",
-        "Commissioni bonifico"
+        "Commissioni bonifico",
+        "spese invio documenti",
+        "lettere cont.",
+        "spese iniziative lettere"
       ]
     },
     {
