@@ -42,7 +42,7 @@ def test_export_csv_due_colonne_header_e_righe():
     out = export_csv([_mov(dare=50.0), _mov(avere=100.0)])
     rows = _parse(out)
     assert rows[0] == ["Data Operazione", "Descrizione", "Addebiti", "Accrediti"]
-    assert rows[1][0] == "05.03.2026"
+    assert rows[1][0] == "05/03/2026"
     assert rows[1][2] == "50,00"
     assert rows[1][3] == ""
     assert rows[2][2] == ""
@@ -109,6 +109,21 @@ def test_export_csv_importi_formattati_italiano():
     out = export_csv([_mov(dare=1234.5)])
     rows = _parse(out)
     assert rows[1][2] == "1.234,50"
+
+
+def test_export_csv_data_in_formato_italiano_slash():
+    """La data operazione esce in formato gg/MM/aaaa (slash), non DD.MM.YYYY."""
+    out = export_csv([_mov(dare=50.0)])
+    rows = _parse(out)
+    assert rows[1][0] == "05/03/2026"
+
+
+def test_export_csv_data_gia_in_altro_formato_passa_through():
+    """Una data non nel formato interno DD.MM.YYYY resta inalterata."""
+    mov = Movimento("2026-03-05", None, "x", "x", dare=50.0)
+    out = export_csv([mov])
+    rows = _parse(out)
+    assert rows[1][0] == "2026-03-05"
 
 
 # ---------------------------------------------------------------------------

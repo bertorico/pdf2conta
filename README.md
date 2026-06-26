@@ -13,6 +13,35 @@ Built around [dots.ocr](https://huggingface.co/rednote-hilab/dots.ocr), a specia
 
 ---
 
+## 🇮🇹 Per studi commercialisti — Estratti conto PDF → Ago Zucchetti
+
+Inserire manualmente le righe dell'estratto conto in Ago Zucchetti richiede decine di minuti per documento.
+Questo strumento converte il PDF direttamente in un CSV pronto per l'import, con causali già assegnate.
+
+### Banche supportate
+
+| Banca | Formato |
+|---|---|
+| Intesa Sanpaolo | Layout ufficiale (con riepilogo saldi) |
+| Intesa Sanpaolo | Formato generico |
+| BNL | Standard con causale ABI |
+| BNL | Lista Movimenti |
+| BNL | Rendiconto POS / finanziamenti |
+
+### Come funziona
+
+1. Carica il PDF dell'estratto conto nell'interfaccia web (porta 8224)
+2. Il sistema riconosce la banca automaticamente e assegna le causali
+3. Revisiona le transazioni nella tabella (modificabile)
+4. Scarica il CSV — pronto per l'import in Ago Zucchetti
+
+L'elaborazione avviene **interamente in locale**: nessun documento viene inviato a servizi esterni.
+
+> **Hai bisogno di supporto o di un template per la tua banca?**
+> Contattami su [LinkedIn](https://www.linkedin.com/in/riccardo-bettoni-fi/)
+
+---
+
 ## What it does
 
 ### EC Converter (Estratto Conto)
@@ -98,8 +127,8 @@ Watches an input folder and automatically OCRs any PDF dropped in:
 ### 1. Clone and start
 
 ```bash
-git clone https://github.com/bertorico/ai-ocr-stack
-cd ai-ocr-stack
+git clone https://github.com/bertorico/pdf2conta
+cd pdf2conta
 docker compose up -d
 ```
 
@@ -135,9 +164,15 @@ curl http://localhost:8222/health  # dots-ocr vLLM
 
 ### Supported banks
 
-Add new banks by creating a template class in `ec_converter/templates/`.
+| Bank | Template | Notes |
+|---|---|---|
+| Intesa Sanpaolo | `intesa_sanpaolo_ufficiale` | Official layout with balance summary |
+| Intesa Sanpaolo | `intesa_sanpaolo` | Generic fallback |
+| BNL | `bnl` | Includes ABI causale column |
+| BNL | `bnl_lista_movimenti` | "Lista movimenti" variant |
+| BNL | `bnl_pos` | POS / financing statement |
 
-Each template implements `estrai_movimenti(pages_html: list[str]) -> list[Movimento]`.
+Auto-detected from the first page. To add a new bank, create a template class in `ec_converter/templates/` implementing `estrai_movimenti(pages_html: list[str]) -> list[Movimento]`.
 
 ### Causali configuration
 
@@ -295,6 +330,5 @@ MIT
 
 ## Author
 
-[@bertorico](https://github.com/bertorico) — self-hosted AI, Italian fiscal domain, n8n automation.
-
-*Built for real Italian accounting workflows with Ago Zucchetti.*
+[@bertorico](https://github.com/bertorico) — self-hosted AI, Italian fiscal domain, n8n automation.  
+[LinkedIn](https://www.linkedin.com/in/riccardo-bettoni-fi/) · *Built for real Italian accounting workflows with Ago Zucchetti.*

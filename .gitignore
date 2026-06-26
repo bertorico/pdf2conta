@@ -1,5 +1,6 @@
 # ========= DATI SENSIBILI / LOCALI (repo pubblico: MAI committare) =========
 # Estratti conto e fatture reali
+*.pdf
 e_c/
 fatture_converter/e_fatture/
 fatture_converter/output/
@@ -33,6 +34,7 @@ secrets/
 credentials.json
 
 .claude
+.playwright-mcp/
 
 *.tar.gz
 *.zip

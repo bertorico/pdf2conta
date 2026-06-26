@@ -1,6 +1,7 @@
 from .base import BankTemplate
 from .bnl import BNLTemplate
 from .bnl_lista_movimenti import BNLListaMovimentiTemplate
+from .bnl_pos import BNLPosTemplate
 from .intesa_sanpaolo import IntesaSanpaoloTemplate
 from .intesa_sanpaolo_ufficiale import IntesaSanpaoloUfficialeTemplate
 
@@ -9,6 +10,7 @@ TEMPLATES = {
     "intesa_sanpaolo": IntesaSanpaoloTemplate,
     "bnl": BNLTemplate,
     "bnl_lista_movimenti": BNLListaMovimentiTemplate,
+    "bnl_pos": BNLPosTemplate,
 }
 
 # Pattern per auto-detect banca dalla prima pagina OCR.
@@ -17,6 +19,9 @@ TEMPLATES = {
 # "dettaglio movimenti del conto corrente" identifica il layout ufficiale Intesa
 # e va prima del pattern generico "intesa sanpaolo".
 _DETECT_PATTERNS = [
+    # "finanziamenti" e' specifico del rendiconto POS BNL (prima riga del doc).
+    # Va prima di "bnl" generico per evitare il fallthrough.
+    ("bnl_pos", ["finanziamenti"]),
     ("bnl_lista_movimenti", ["lista movimenti"]),
     (
         "intesa_sanpaolo_ufficiale",

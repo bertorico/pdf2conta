@@ -16,6 +16,21 @@ from normalizer import formatta_importo
 from templates.base import Movimento
 
 
+def _formatta_data_csv(data: str | None) -> str:
+    """
+    Converte una data dal formato interno (DD.MM.YYYY) al formato italiano
+    richiesto dall'export CSV (gg/MM/aaaa).
+
+    Lascia inalterate le stringhe che non corrispondono al formato interno,
+    cosi' eventuali date gia' in altro formato o campi vuoti passano through.
+    """
+    if not data:
+        return ""
+    if len(data) == 10 and data[2] == "." and data[5] == ".":
+        return f"{data[0:2]}/{data[3:5]}/{data[6:10]}"
+    return data
+
+
 def export_csv(
     movimenti: list[Movimento],
     modalita_importo: Literal["due_colonne", "colonna_unica"] = "due_colonne",
@@ -58,7 +73,7 @@ def export_csv(
         if modalita_importo == "due_colonne":
             dare_str = formatta_importo(mov.dare) if mov.dare is not None else ""
             avere_str = formatta_importo(mov.avere) if mov.avere is not None else ""
-            row = [mov.data_operazione, mov.descrizione]
+            row = [_formatta_data_csv(mov.data_operazione), mov.descrizione]
             if includi_causale:
                 row.append(causale_str)
             row.extend([dare_str, avere_str])
@@ -70,7 +85,7 @@ def export_csv(
                 importo_str = formatta_importo(mov.avere)
             else:
                 importo_str = "0,00"
-            row = [mov.data_operazione, mov.descrizione]
+            row = [_formatta_data_csv(mov.data_operazione), mov.descrizione]
             if includi_causale:
                 row.append(causale_str)
             row.append(importo_str)
